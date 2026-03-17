@@ -4,3 +4,8 @@
 * Link: [IEEE](https://ieeexplore.ieee.org/abstract/document/1545107)
 * PDF: [[RoboCart_toward_robot-assisted_navigation_of_grocery_stores_by_the_visually_impaired.pdf]]
 * Not super relevant as it's more about navigating a grocery store then putting away groceries, but there should be some computer vision applications.
+
+### Deep Learning based Object Recognition for Robot picking task
+* Link: [https://ieeexplore.ieee.org/abstract/document/7053853](https://dl.acm.org/doi/abs/10.1145/3164541.3164628)
+* PDF: https://dl.acm.org/doi/epdf/10.1145/3164541.3164628
+* About object recognition in cluttered scene and success using RESNET.
