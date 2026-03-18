@@ -9,3 +9,8 @@
 * Link: [https://ieeexplore.ieee.org/abstract/document/7053853](https://dl.acm.org/doi/abs/10.1145/3164541.3164628)
 * PDF: https://dl.acm.org/doi/epdf/10.1145/3164541.3164628
 * About object recognition in cluttered scene and success using RESNET.
+
+### Object detection and mapping for service robot tasks
+* Link: https://www.cambridge.org/core/journals/robotica/article/object-detection-and-mapping-for-service-robot-tasks/212A50021787D5905AF0766231D55A5B
+* PDF: https://www.cambridge.org/core/services/aop-cambridge-core/content/view/212A50021787D5905AF0766231D55A5B/S0263574706003237a.pdf/object-detection-and-mapping-for-service-robot-tasks.pdf
+* Paper studies mobile robot that autonomously navigates dometic environment, builds map, & detects predefined objects. Some relevant info on object detection vs object recognition.
