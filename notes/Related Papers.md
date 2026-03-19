@@ -16,4 +16,5 @@
 ### Grocery product detection and recognition
 * Link: [Science Direct](https://www.sciencedirect.com/science/article/pii/S0957417417301227)
 * PDF: [[Grocery_Product_Detection_and_Recognition.pdf|Local]]
-* 
+* Notes:
+	* TODO
