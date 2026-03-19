@@ -13,6 +13,11 @@
 * PDF: [ACM](https://dl.acm.org/doi/epdf/10.1145/3164541.3164628) [[Deep_Learning_Based_Object_Recognition_for_Robot_Picking_Task.pdf|Local]]
 * About object recognition in cluttered scene and success using RESNET.
 
+### Object detection and mapping for service robot tasks
+* Link: https://www.cambridge.org/core/journals/robotica/article/object-detection-and-mapping-for-service-robot-tasks/212A50021787D5905AF0766231D55A5B
+* PDF: [[Object detection and mapping for service robot tasks.pdf]]
+* Paper studies mobile robot that autonomously navigates dometic environment, builds map, & detects predefined objects. Some relevant info on object detection vs object recognition.
+
 ### Grocery product detection and recognition
 * Link: [Science Direct](https://www.sciencedirect.com/science/article/pii/S0957417417301227)
 * PDF: [[Grocery_Product_Detection_and_Recognition.pdf|Local]]
