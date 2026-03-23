@@ -8,6 +8,10 @@
 	* RoboCart uses RFID tags to identify specific objects rather than computer vision.
 	* "Knowledge engineering for the path planner is done in OpenCyc, a free knowledge engineering tool from the Cyc Corporation that allows one to represent common sense knowledge using first order logic"
 
+### MOVAID: a personal robot in everyday life of disabled and elderly people
+* Link: [Sage Journals](https://journals.sagepub.com/doi/abs/10.3233/TAD-1999-10202)
+* PDF: [[dario-et-al-1999-movaid-a-personal-robot-in-everyday-life-of-disabled-and-elderly-people.pdf|Local]]
+
 ### Deep Learning based Object Recognition for Robot picking task
 * Link: [https://ieeexplore.ieee.org/abstract/document/7053853](https://dl.acm.org/doi/abs/10.1145/3164541.3164628)
 * PDF: [ACM](https://dl.acm.org/doi/epdf/10.1145/3164541.3164628) [[Deep_Learning_Based_Object_Recognition_for_Robot_Picking_Task.pdf|Local]]
