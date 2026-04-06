@@ -43,3 +43,8 @@
 		* I think we could probably find a better pre-trained model nowadays, certainly [[#Object detection and mapping for service robot tasks]] - RESNET would be a good option
 * phase 3 - post processing
 	* phase 1 and 2 produce multiple bounding boxes for each object. This just clusters them into a singular box.
+
+### Object detection and recognition for a pick and place Robot
+* Link: https://ieeexplore.ieee.org/document/7053853
+* PDF: [[Object_detection_and_recognition_for_a_pick_and_place_Robot.pdf]]
+* The goal of this paper was to develop an image processing technique involving feature extraction and classification algorithms for  an object sorting task. The developed technique was to be used on a robotic arm platform that could sort electronic components for laboratory technicians. This paper provided a good breakdown of key algorithms for understanding image processing tasks. It also provided a useful framework for evaluating performance.
