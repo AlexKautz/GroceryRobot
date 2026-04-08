@@ -1,0 +1,17 @@
+- MetaProject Review
+	- We are working on a reduced 4 week timeline. "Final Due Date" is not set in stone, but is expected to  be April 30th
+	- Our next meeting in Wednesday April 15th, 2026 at 12:46 PM.
+	- We will add our code to this repository in folders (like `code/ROS/`, `code/Gazebo/`, `code/CV_Explore/`).
+	- We have new areas of focus:
+		- Pascale - CV, object detection, object localization
+		- Keven - ROS
+		- Alex - Gazebo simulation
+- ROS and Gazebo versions
+	- ROS and Gazebo have specific version compatibility.
+	- See Gazebo's version chart: https://gazebosim.org/docs/all/ros_installation/
+	- For this project, we will use the versions of ROS and Gazebo pre-installed in the Robotics Teaching Lab (435).
+		- ROS 2 Kilted
+		- Gazebo Ionic
+- Project thoughts:
+	- Where is the camera? Above or on the arm itself?
+	- Grocery Items are randomly placed in the box
