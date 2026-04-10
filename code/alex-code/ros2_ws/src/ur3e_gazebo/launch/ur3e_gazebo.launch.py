@@ -3,6 +3,7 @@ from launch.actions import IncludeLaunchDescription, RegisterEventHandler
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import PathJoinSubstitution, Command
 
@@ -12,11 +13,15 @@ def generate_launch_description():
     # Find our package
     ur3e_gazebo_pkg = FindPackageShare('ur3e_gazebo')
 
-    # Generate the URDF from our wrapper xacro (which lives in ur3e_gazebo, not the upstream package)
-    robot_description = Command([
-        'ros2 run xacro xacro ',
-        PathJoinSubstitution([ur3e_gazebo_pkg, 'urdf', 'ur3e_gz.urdf.xacro']),
-    ])
+    # Generate the URDF from our wrapper xacro (which lives in ur3e_gazebo, not the upstream package).
+    # ParameterValue(..., value_type=str) prevents ROS 2 from trying to parse the URDF XML as YAML.
+    robot_description = ParameterValue(
+        Command([
+            'ros2 run xacro xacro ',
+            PathJoinSubstitution([ur3e_gazebo_pkg, 'urdf', 'ur3e_gz.urdf.xacro']),
+        ]),
+        value_type=str,
+    )
 
     # Start Gazebo with our world
     gazebo = IncludeLaunchDescription(
