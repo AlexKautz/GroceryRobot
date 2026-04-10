@@ -44,19 +44,57 @@ gz sim gui: symbol lookup error: /snap/core20/current/lib/x86_64-linux-gnu/libpt
 
 ### Phase 1: Environment Check
 
-- [ ] Confirm ROS 2 Kilted is sourced in your native terminal (`printenv ROS_DISTRO` should return `kilted`)
-- [ ] Confirm Gazebo Ionic is installed and accessible (`gz sim --version`)
-- [ ] Confirm `gz_ros2_control` and `ros_gz_bridge` packages are available for Kilted (`ros2 pkg list | grep gz`)
+- [x] Confirm ROS 2 Kilted is sourced in your native terminal (`printenv ROS_DISTRO` should return `kilted`)
+- [x] Confirm Gazebo Ionic is installed and accessible (`gz sim --version`)
+- [x] Confirm `gz_ros2_control` and `ros_gz_bridge` packages are available for Kilted (`ros2 pkg list | grep gz`)
+### ROS 2 Workspace — `ros2_ws`
 
+A ROS 2 workspace is a directory that `colcon` uses to build, install, and organize ROS 2 packages. The workspace lives at `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws` and has four key folders:
+
+- `src/` — where you clone or place package source code
+- `build/` — intermediate build artifacts (auto-generated, don't touch)
+- `install/` — the final built packages that ROS 2 actually uses
+- `log/` — build logs
+
+Any time you add a new package, clone it into `src/`, then run `colcon build` from the workspace root. Always re-source after building:
+
+```bash
+source install/setup.bash
+```
+
+This "refreshes" ROS 2's awareness of the workspace. Add it to `~/.bashrc` to avoid doing it manually in every terminal. 
 ### Phase 2: Get the UR3e Description
+- [x] Clone the `ur_description` package into your workspace `src/` folder:
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws/src`
+```bash
+  git clone https://github.com/UniversalRobots/Universal_Robots_ROS2_Description
+```
 
-- [ ] Install or clone the `ur_description` package from the Universal Robots ROS 2 repo:
-  `https://github.com/UniversalRobots/Universal_Robots_ROS2_Description`
-- [ ] Check out the branch compatible with your ROS distro (look for a `kilted` or `rolling` branch)
-- [ ] Build the package in your workspace: `colcon build --packages-select ur_description`
-- [ ] Source your workspace: `source install/setup.bash`
-- [ ] Test that the URDF generates correctly: `ros2 launch ur_description view_ur.launch.py ur_type:=ur3e`
+- [x] Check out the `rolling` branch (confirmed compatible branch for our ROS distro):
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws/src/Universal_Robots_ROS2_Description`
+```bash
+  git checkout rolling
+```
 
+- [x] Build the package:
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws`
+```bash
+  colcon build --packages-select ur_description
+```
+
+- [x] Source the workspace:
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws`
+```bash
+  source install/setup.bash
+```
+
+- [x] Test that the URDF generates correctly:
+  - 📁 **Run from:** anywhere (as long as workspace is sourced)
+```bash
+  ros2 launch ur_description view_ur.launch.py ur_type:=ur3e
+```
+  - ✅ Success looks like: RViz opens and displays the UR3e arm model
+  - ⚠️ If RViz doesn't open, check that `rviz2` is installed: `sudo apt install ros-kilted-rviz2`
 ### Phase 3: Spawn the Arm in Gazebo Ionic
 
 - [ ] Create a minimal Gazebo Ionic world `.sdf` file with a ground plane and lighting
