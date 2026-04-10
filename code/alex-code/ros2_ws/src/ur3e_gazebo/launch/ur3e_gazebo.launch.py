@@ -1,5 +1,6 @@
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, RegisterEventHandler
+from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -8,16 +9,13 @@ from launch.substitutions import PathJoinSubstitution, Command
 
 def generate_launch_description():
 
-    # Find the ur_description package
-    ur_description_pkg = FindPackageShare('ur_description')
+    # Find our package
+    ur3e_gazebo_pkg = FindPackageShare('ur3e_gazebo')
 
-    # Generate the UR3e URDF via xacro
+    # Generate the URDF from our wrapper xacro (which lives in ur3e_gazebo, not the upstream package)
     robot_description = Command([
         'ros2 run xacro xacro ',
-        PathJoinSubstitution([ur_description_pkg, 'urdf', 'ur.urdf.xacro']),
-        ' ur_type:=ur3e',
-        ' name:=ur3e',
-        ' force_abs_paths:=true',
+        PathJoinSubstitution([ur3e_gazebo_pkg, 'urdf', 'ur3e_gz.urdf.xacro']),
     ])
 
     # Start Gazebo with our world
@@ -51,8 +49,39 @@ def generate_launch_description():
         ],
     )
 
+    # Spawn joint_state_broadcaster after the robot is in Gazebo
+    joint_state_broadcaster_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
+    )
+
+    # Spawn joint_trajectory_controller after joint_state_broadcaster is active
+    joint_trajectory_controller_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['joint_trajectory_controller', '--controller-manager', '/controller_manager'],
+    )
+
+    # Chain: spawn_robot -> joint_state_broadcaster -> joint_trajectory_controller
+    load_joint_state_broadcaster = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=spawn_robot,
+            on_exit=[joint_state_broadcaster_spawner],
+        )
+    )
+
+    load_joint_trajectory_controller = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=joint_state_broadcaster_spawner,
+            on_exit=[joint_trajectory_controller_spawner],
+        )
+    )
+
     return LaunchDescription([
         gazebo,
         robot_state_publisher,
         spawn_robot,
+        load_joint_state_broadcaster,
+        load_joint_trajectory_controller,
     ])

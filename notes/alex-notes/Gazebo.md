@@ -271,11 +271,15 @@ What packages are in this ROS 2 workspace?
 
 > ⚠️ Before starting Phase 4, `gz_ros2_control` needs to be added to the URDF so Gazebo actually simulates the joints. The arm currently spawns as a static mesh only.
 
-- [ ] Add `gz_ros2_control` plugin to the URDF so Gazebo simulates joint physics
-  - [ ] Locate the `ur_macro.xacro` file inside `ur_description` — this is where the plugin needs to be added
-  - [ ] Add a `<gazebo>` plugin block referencing `gz_ros2_control` to the xacro
-  - [ ] Create a `ros2_controllers.yaml` config file inside `ur3e_gazebo` defining the joint controllers
-  - [ ] Update the launch file to load the controller config and spawn the controllers on startup
+- [x] Add `gz_ros2_control` plugin to the URDF so Gazebo simulates joint physics
+  - [x] Locate the `ur_macro.xacro` file inside `ur_description` — this is where the plugin needs to be added
+  - [x] Add a `<gazebo>` plugin block referencing `gz_ros2_control` to the xacro
+  - [x] Create a `ros2_controllers.yaml` config file inside `ur3e_gazebo` defining the joint controllers
+  - [x] Update the launch file to load the controller config and spawn the controllers on startup
+
+#### Note: I've switched entirely to Claud Code
+It is just not possible for me to learn this in time without the project failing. Luckily, this is a good chance to learn Cloud Code and get into the loop of working on this. It's very interesting. You actually have to edit both files that you control and the files you get for the description of the robotic arm. It's incredibly complicated, LOL.
+
 
 - [ ] Rebuild and relaunch, confirm joint topics appear in `gz topic -l`
   - [ ] Rebuild: `colcon build --packages-select ur3e_gazebo ur_description`
