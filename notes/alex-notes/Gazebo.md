@@ -207,20 +207,99 @@ ros2 topic list
 
 ---
 
+### Phase 3.5: Set Up Claude Code in VS Code
+
+> ⚠️ AI-Generated Section
+
+Claude Code's VS Code extension brings AI-assisted coding directly into the editor — inline diffs, accept/reject buttons, file @-mentions, and a chat panel that already knows your project context. Think Cursor, but it's an extension so all your existing VS Code settings, themes, and plugins stay intact.
+
+> **Requirement:** You need a Claude Pro, Max, Team, or Enterprise account, OR an Anthropic Console account with active API billing. The free Claude.ai plan does not include Claude Code access.
+
+> **Requirement:** VS Code version 1.98.0 or later.
+
+---
+
+**Step 1 — Install the Claude Code CLI (required first):**
+- 📁 **Run from:** anywhere
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+```
+Then add it to PATH:
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc && source ~/.bashrc
+```
+Verify:
+```bash
+claude --version
+```
+
+**Step 2 — Install the VS Code extension:**
+
+Open VS Code and press `Ctrl+Shift+X` to open the Extensions panel. Search for `Claude Code` and install the one published by **Anthropic** (watch out for unofficial lookalikes).
+
+Alternatively, install from the terminal:
+```bash
+code --install-extension anthropic.claude-code
+```
+
+**Step 3 — Authenticate:**
+
+Click the **Spark icon** (⚡) that appears in the VS Code sidebar after installation. It will prompt you to sign in — follow the browser login flow with your Anthropic account.
+
+**Step 4 — Open the project:**
+- Open `~/Code/ROS/GroceryRobot` as your VS Code workspace
+- Click the Spark icon in the sidebar to open the Claude Code panel
+- Claude Code will automatically read your project structure — no manual setup needed
+
+**Step 5 — Sanity check:**
+
+Try a simple prompt in the panel:
+```
+What packages are in this ROS 2 workspace?
+```
+✅ Success: Claude describes your `ur_description` and `ur3e_gazebo` packages correctly
+
+---
+
+> **Key features to know:**
+> - **Inline diffs** — Claude proposes changes as diffs you can accept or reject line by line
+> - **@-mention files** — type `@filename` in the prompt to pull a specific file into context
+> - **Plan mode** — Claude shows its plan before making changes, so you can review and edit it first
+> - **Terminal access** — Claude can run commands in the VS Code integrated terminal with your permission
+
 ### Phase 4: Basic Joint Verification
 
 > ⚠️ Before starting Phase 4, `gz_ros2_control` needs to be added to the URDF so Gazebo actually simulates the joints. The arm currently spawns as a static mesh only.
 
 - [ ] Add `gz_ros2_control` plugin to the URDF so Gazebo simulates joint physics
-- [ ] Rebuild and relaunch, confirm joint topics appear in `gz topic -l`
-- [ ] Verify joint states are publishing:
-  - 📁 **Run from:** anywhere
-```bash
-ros2 topic echo /joint_states
-```
-- [ ] Send a basic joint command manually to confirm the arm moves
-- [ ] Confirm no collisions or URDF errors appear in the terminal output
+  - [ ] Locate the `ur_macro.xacro` file inside `ur_description` — this is where the plugin needs to be added
+  - [ ] Add a `<gazebo>` plugin block referencing `gz_ros2_control` to the xacro
+  - [ ] Create a `ros2_controllers.yaml` config file inside `ur3e_gazebo` defining the joint controllers
+  - [ ] Update the launch file to load the controller config and spawn the controllers on startup
 
+- [ ] Rebuild and relaunch, confirm joint topics appear in `gz topic -l`
+  - [ ] Rebuild: `colcon build --packages-select ur3e_gazebo ur_description`
+  - [ ] Re-source: `source install/setup.bash`
+  - [ ] Relaunch: `ros2 launch ur3e_gazebo ur3e_gazebo.launch.py`
+  - [ ] In a second terminal, run `gz topic -l` and confirm joint-related topics appear
+  - [ ] Also run `ros2 topic list` and confirm `/joint_states` and `/joint_trajectory_controller/joint_trajectory` appear
+
+- [ ] Verify joint states are publishing:
+  - [ ] 📁 **Run from:** anywhere (second terminal, workspace sourced)
+  - [ ] Run `ros2 topic echo /joint_states`
+  - [ ] Confirm all 6 joints are listed with position, velocity, and effort values
+  - [ ] Confirm values are updating over time (not frozen)
+
+- [ ] Send a basic joint command manually to confirm the arm moves
+  - [ ] Identify the correct topic to publish to (`/joint_trajectory_controller/joint_trajectory`)
+  - [ ] Construct a test `JointTrajectory` message targeting one joint
+  - [ ] Publish it with `ros2 topic pub` and observe the arm move in Gazebo
+  - [ ] Confirm the joint returns a new position in `ros2 topic echo /joint_states`
+
+- [ ] Confirm no collisions or URDF errors appear in the terminal output
+  - [ ] Check the launch terminal for any URDF warnings or `[ERROR]` lines
+  - [ ] Check for any self-collision warnings in the Gazebo output
+  - [ ] Check that all 6 joint names in `/joint_states` match the expected UR3e joint names
 ---
 
 ### Phase 5: Ready for April 15th Meeting
