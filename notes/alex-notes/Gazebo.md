@@ -289,25 +289,30 @@ It is just not possible for me to learn this in time without the project failing
   - [x] Confirmed via spawner output: `Configured and activated joint_trajectory_controller`
   - ⚠️ **Gotcha:** Controller spawners were timing out due to no sim clock. Fixed by adding a `ros_gz_bridge` clock bridge node to the launch file (`/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock`). Without this, `controller_manager` has no sim time and service calls hang.
 
-- [ ] Verify joint states are publishing:
-  - [ ] 📁 **Run from:** anywhere (second terminal, workspace sourced)
-  - [ ] Run `ros2 topic echo /joint_states`
-  - [ ] Confirm all 6 joints are listed with position, velocity, and effort values
-  - [ ] Confirm values are updating over time (not frozen)
+- [x] Verify joint states are publishing:
+  - [x] Run `ros2 topic echo /joint_states`
+  - [x] All 6 joints listed with position, velocity, and effort values
+  - [x] Values updating over time — sim time ticking, effort non-zero (gravity hold)
 
-- [ ] Send a basic joint command manually to confirm the arm moves
-  - [ ] Identify the correct topic to publish to (`/joint_trajectory_controller/joint_trajectory`)
-  - [ ] Construct a test `JointTrajectory` message targeting one joint
-  - [ ] Publish it with `ros2 topic pub` and observe the arm move in Gazebo
-  - [ ] Confirm the joint returns a new position in `ros2 topic echo /joint_states`
+- [x] Send a basic joint command manually to confirm the arm moves
+  - [x] Publish to `/joint_trajectory_controller/joint_trajectory`
+  - [x] Sent `shoulder_pan_joint` to 1.0 rad with `time_from_start: 2s` — arm moved in Gazebo GUI ✅
+  - Command used:
+```bash
+ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory "{
+  joint_names: [shoulder_pan_joint, shoulder_lift_joint, elbow_joint, wrist_1_joint, wrist_2_joint, wrist_3_joint],
+  points: [{
+    positions: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    time_from_start: {sec: 2, nanosec: 0}
+  }]
+}"
+```
 
-- [ ] Confirm no collisions or URDF errors appear in the terminal output
-  - [ ] Check the launch terminal for any URDF warnings or `[ERROR]` lines
-  - [ ] Check that all 6 joint names in `/joint_states` match the expected UR3e joint names
+- [x] Confirm no collisions or URDF errors in terminal output — none observed
 ---
 
 ### Phase 5: Ready for April 15th Meeting
 
-- [ ] Take a screenshot of the working arm in Gazebo to share with the team
-- [ ] Note any compatibility issues encountered for Keven (ROS) and Pascale (CV) to be aware of
-- [ ] Commit any working config files to `code/Gazebo/` in the shared repo
+- [x] Take a screenshot of the working arm in Gazebo to share with the team
+- [x] Note any compatibility issues encountered for Keven (ROS) and Pascale (CV) to be aware of
+- [x] Commit any working config files to `code/Gazebo/` in the shared repo
