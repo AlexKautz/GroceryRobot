@@ -21,3 +21,4 @@ You can open the root folder in it to get started.
 `code/` - all of our code.
 `notes/` - stores the majority of our notes. It is still best to open the repository at the root in tools like Obsidian so our notes can reference other files.
 `documents/` - stores our formal documents both in Latex and PDFs
+
