@@ -37,11 +37,18 @@ def generate_launch_description():
         ])}.items(),
     )
 
+    # Bridge Gazebo /clock to ROS so controller_manager gets sim time
+    clock_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+    )
+
     # Publish the robot state
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        parameters=[{'robot_description': robot_description}],
+        parameters=[{'robot_description': robot_description, 'use_sim_time': True}],
     )
 
     # Spawn the UR3e into Gazebo
@@ -85,6 +92,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         gazebo,
+        clock_bridge,
         robot_state_publisher,
         spawn_robot,
         load_joint_state_broadcaster,
