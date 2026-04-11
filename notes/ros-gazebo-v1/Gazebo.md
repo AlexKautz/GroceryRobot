@@ -316,3 +316,26 @@ ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_m
 - [x] Take a screenshot of the working arm in Gazebo to share with the team
 - [x] Note any compatibility issues encountered for Keven (ROS) and Pascale (CV) to be aware of
 - [x] Commit any working config files to `code/Gazebo/` in the shared repo
+
+# 🛠️ Work Notes — Camera and Shelf
+### I wan to accomplish the following things:
+* Updating the world
+	* On one side of the robotic arm is a table
+		* On top of the table is an apple
+		* In the future we will have a box containing the Apple (and other groceries), but that will be future work.
+	* On the other side of the robotic arm is a shelf
+		* The shelf is representing a refrigerator
+	* The robotic arm should start facing the apple.
+* Creating the image module template
+	* Attach a camera and a 3D camera to the robotic arm
+	* Create a camera and a 3D camera floating above the table looking down
+	* In ROS Create two modules. 
+		* One will use the camera and 3D camera on the arm and return expected location information. 
+		* The other will use the camera and 3D camera floating above and again return expected location information. 
+		* For both the expected location information is the location of the grocery item in this case an apple. 
+		* Actually programming this module is the job of a teammate. So I want you to put in lots of comments and hints on how to do this, and assume the person working on this project has not actually worked with the robotic operating system or gazebo before. But don't actually implement the computer vision algorithms.
+* Moving the Arm
+	* Attach a gripper to the arm.
+	* Have the arm reach down and grab the apple. Make sure it's doing this using a hard-coded, pre-set location of the apple, since making it dynamic will be the job of other group members.
+* Notes
+	* During this entire process, make sure to update the three notes in the ros-gazebo-folder. Create another note which is a guide for programming this specific robot, both from Ross and specifically for the computer vision part of it. This will include a section on programming gazebo for my own work.
