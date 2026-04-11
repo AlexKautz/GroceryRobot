@@ -55,7 +55,7 @@ gz sim gui: symbol lookup error: /snap/core20/current/lib/x86_64-linux-gnu/libpt
 
 ### ROS 2 Workspace — `ros2_ws`
 
-A ROS 2 workspace is a directory that `colcon` uses to build, install, and organize ROS 2 packages. The workspace lives at `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws` and has four key folders:
+A ROS 2 workspace is a directory that `colcon` uses to build, install, and organize ROS 2 packages. The workspace lives at `~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws` and has four key folders:
 
 - `src/` — where you clone or place package source code
 - `build/` — intermediate build artifacts (auto-generated, don't touch)
@@ -75,25 +75,25 @@ This "refreshes" ROS 2's awareness of the workspace. Add it to `~/.bashrc` to av
 ### Phase 2: Get the UR3e Description
 
 - [x] Clone the `ur_description` package into your workspace `src/` folder:
-  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws/src`
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws/src`
 ```bash
 git clone https://github.com/UniversalRobots/Universal_Robots_ROS2_Description
 ```
 
 - [x] Check out the `rolling` branch (confirmed compatible branch for our ROS distro):
-  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws/src/Universal_Robots_ROS2_Description`
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws/src/Universal_Robots_ROS2_Description`
 ```bash
 git checkout rolling
 ```
 
 - [x] Build the package:
-  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws`
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws`
 ```bash
 colcon build --packages-select ur_description
 ```
 
 - [x] Source the workspace:
-  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws`
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws`
 ```bash
 source install/setup.bash
 ```
@@ -118,7 +118,7 @@ ros2 launch ur_description view_ur.launch.py ur_type:=ur3e
   - ✅ World file stored at: `src/ur3e_gazebo/worlds/grocery_world.sdf`
 
 - [x] Create a new ROS 2 package `ur3e_gazebo` to hold the launch file and world:
-  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws/src`
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws/src`
 ```bash
 ros2 pkg create ur3e_gazebo --build-type ament_python --dependencies ros2launch ros_gz_sim robot_state_publisher
 ```
@@ -189,7 +189,7 @@ def generate_launch_description():
 ```
 
 - [x] Run the launch file and confirm the arm appears in the Gazebo GUI without errors:
-  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/alex-code/ros2_ws`
+  - 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws`
 ```bash
 ros2 launch ur3e_gazebo ur3e_gazebo.launch.py
 ```

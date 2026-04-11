@@ -48,7 +48,7 @@ The `Universal_Robots_ROS2_Description` package is intentionally excluded from t
 (it has its own Git history). Clone it manually into the right place:
 
 ```bash
-cd code/alex-code/ros2_ws/src
+cd code/ros-gazebo-v1/ros2_ws/src
 git clone https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git
 cd Universal_Robots_ROS2_Description
 git checkout rolling
@@ -65,7 +65,7 @@ git checkout rolling
 From the workspace root:
 
 ```bash
-cd code/alex-code/ros2_ws
+cd code/ros-gazebo-v1/ros2_ws
 source /opt/ros/kilted/setup.bash
 rosdep install --from-paths src --ignore-src -r -y
 ```
@@ -88,7 +88,7 @@ Add these to `~/.bashrc` to avoid sourcing manually every session:
 
 ```bash
 echo "source /opt/ros/kilted/setup.bash" >> ~/.bashrc
-echo "source ~/path/to/GroceryRobot/code/alex-code/ros2_ws/install/setup.bash" >> ~/.bashrc
+echo "source ~/path/to/GroceryRobot/code/ros-gazebo-v1/ros2_ws/install/setup.bash" >> ~/.bashrc
 ```
 
 ---
@@ -127,7 +127,7 @@ joint_trajectory_controller[joint_trajectory_controller/JointTrajectoryControlle
 
 ## Part 2: Key Files Reference
 
-All of our code lives in `code/alex-code/ros2_ws/src/ur3e_gazebo/`.
+All of our code lives in `code/ros-gazebo-v1/ros2_ws/src/ur3e_gazebo/`.
 The `Universal_Robots_ROS2_Description/` package next to it is third-party — we never edit it.
 
 ---
@@ -219,7 +219,7 @@ The `Universal_Robots_ROS2_Description/` package next to it is third-party — w
 
 ```
 GroceryRobot/
-├── code/alex-code/ros2_ws/
+├── code/ros-gazebo-v1/ros2_ws/
 │   └── src/
 │       ├── ur3e_gazebo/                        # Our package (tracked in git)
 │       │   ├── launch/
@@ -234,6 +234,6 @@ GroceryRobot/
 │       │   └── package.xml                     # Package metadata and dependencies
 │       └── Universal_Robots_ROS2_Description/  # Third-party — clone separately, never edit
 └── notes/
-    └── alex-notes/
+    └── ros-gazebo-v1/
         └── Setup and Info.md                   # This file
 ```
