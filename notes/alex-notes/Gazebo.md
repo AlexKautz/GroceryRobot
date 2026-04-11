@@ -269,7 +269,7 @@ What packages are in this ROS 2 workspace?
 
 ### Phase 4: Basic Joint Verification
 
-> ⚠️ Before starting Phase 4, `gz_ros2_control` needs to be added to the URDF so Gazebo actually simulates the joints. The arm currently spawns as a static mesh only.
+> ✅ `gz_ros2_control` is wired up and both controllers load successfully as of 2026-04-11.
 
 - [x] Add `gz_ros2_control` plugin to the URDF so Gazebo simulates joint physics
   - [x] Locate the `ur_macro.xacro` file inside `ur_description` — this is where the plugin needs to be added
@@ -277,16 +277,17 @@ What packages are in this ROS 2 workspace?
   - [x] Create a `ros2_controllers.yaml` config file inside `ur3e_gazebo` defining the joint controllers
   - [x] Update the launch file to load the controller config and spawn the controllers on startup
 
-#### Note: I've switched entirely to Claud Code
-It is just not possible for me to learn this in time without the project failing. Luckily, this is a good chance to learn Cloud Code and get into the loop of working on this. It's very interesting. You actually have to edit both files that you control and the files you get for the description of the robotic arm. It's incredibly complicated, LOL.
+#### Note: I've switched entirely to Claude Code
+It is just not possible for me to learn this in time without the project failing. Luckily, this is a good chance to learn Claude Code and get into the loop of working on this. It's very interesting. You actually have to edit both files that you control and the files you get for the description of the robotic arm. It's incredibly complicated, LOL.
 
-
-- [ ] Rebuild and relaunch, confirm joint topics appear in `gz topic -l`
-  - [ ] Rebuild: `colcon build --packages-select ur3e_gazebo ur_description`
-  - [ ] Re-source: `source install/setup.bash`
-  - [ ] Relaunch: `ros2 launch ur3e_gazebo ur3e_gazebo.launch.py`
-  - [ ] In a second terminal, run `gz topic -l` and confirm joint-related topics appear
-  - [ ] Also run `ros2 topic list` and confirm `/joint_states` and `/joint_trajectory_controller/joint_trajectory` appear
+- [x] Rebuild and relaunch, confirm both controllers activate cleanly
+  - [x] Install missing package: `sudo apt install -y ros-kilted-ros2-controllers`
+  - [x] Rebuild: `colcon build --packages-select ur3e_gazebo`
+  - [x] Re-source: `source install/setup.bash`
+  - [x] Relaunch: `ros2 launch ur3e_gazebo ur3e_gazebo.launch.py`
+  - [x] Confirmed via spawner output: `Configured and activated joint_state_broadcaster`
+  - [x] Confirmed via spawner output: `Configured and activated joint_trajectory_controller`
+  - ⚠️ **Gotcha:** Controller spawners were timing out due to no sim clock. Fixed by adding a `ros_gz_bridge` clock bridge node to the launch file (`/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock`). Without this, `controller_manager` has no sim time and service calls hang.
 
 - [ ] Verify joint states are publishing:
   - [ ] 📁 **Run from:** anywhere (second terminal, workspace sourced)
@@ -302,7 +303,6 @@ It is just not possible for me to learn this in time without the project failing
 
 - [ ] Confirm no collisions or URDF errors appear in the terminal output
   - [ ] Check the launch terminal for any URDF warnings or `[ERROR]` lines
-  - [ ] Check for any self-collision warnings in the Gazebo output
   - [ ] Check that all 6 joint names in `/joint_states` match the expected UR3e joint names
 ---
 
