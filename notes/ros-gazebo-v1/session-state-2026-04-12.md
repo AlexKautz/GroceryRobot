@@ -63,7 +63,10 @@ Click Play in Gazebo to activate the controllers. The arm faces the table at a n
 - Phase 6.2 (apple): ✅ complete
 - Phase 6.3 (shelf): ✅ complete
 - Phase 6.4 (arm home pose): ✅ complete
-- Phase 7 (cameras): NOT YET STARTED
+- Phase 7.1 (arm cameras in URDF): ✅ complete
+- Phase 7.2 (overhead camera in SDF): ✅ complete
+- Phase 7.3 (bridge all camera topics): ✅ complete
+- Phase 7.4 (stub CV nodes): NOT YET STARTED
 - Phase 8 (gripper + pick): NOT YET STARTED
 
 ---
@@ -74,13 +77,30 @@ Click Play in Gazebo to activate the controllers. The arm faces the table at a n
 
 ---
 
-## What's next — Phase 7: Cameras and Vision Module Templates
+## Phase 7 summary — Cameras and Bridging (COMPLETE through 7.3)
 
-**Goal:** Add cameras to the simulation and bridge them to ROS topics.
+### 7.1 — Arm cameras
+- Added `camera_link` to `urdf/ur3e_gz.urdf.xacro`, mounted on `wrist_3_link` (not `tool0` — keeps tool0 free for the Phase 8 gripper)
+- Offset: `xyz="0 0.04 0.06"`, angled ~17° down to see the gripper workspace
+- RGB sensor: `/arm_camera/image_raw` | Depth sensor: `/arm_depth_camera`
+- Added `gz-sim-sensors-system` plugin to `worlds/grocery_world.sdf` — required for any camera to function
+- Gotchas: URDF `<material>` must have a `name` attribute; `gz_frame_id` is not valid in Gazebo Ionic
 
-- **7.1** — Add RGB camera + depth camera to the arm's `tool0` link (end-effector)
-- **7.2** — Add one or two fixed overhead cameras looking down at the table
-- **7.3** — Bridge all camera topics (image, depth, camera_info) from Gazebo to ROS via `ros_gz_bridge`
-- **7.4** — Create stub Python nodes for Pascale (CV teammate) to fill in:
-  - `arm_camera_node.py` — subscribes to arm camera topics, publishes detected object poses
-  - `overhead_camera_node.py` — subscribes to overhead camera topics, same output
+### 7.2 — Overhead camera
+- Added `overhead_camera` static model to `worlds/grocery_world.sdf`
+- Pose: `0.35 0 1.2 0 1.5708 0` — centered over the table, 1.2 m up, pitched 90° to face straight down
+- RGB sensor: `/overhead_camera/image_raw` | Depth sensor: `/overhead_depth_camera`
+
+### 7.3 — Bridge
+- Expanded `launch/ur3e_gazebo.launch.py` with a dedicated `camera_bridge` node (separate from `clock_bridge`)
+- All 12 camera topics confirmed live in ROS 2 via `ros2 topic list | grep camera`
+- Design decision: two separate bridge nodes so a camera issue can't kill the clock bridge and crash the controllers
+
+---
+
+## What's next — Phase 7.4: Stub CV Nodes
+
+Create two Python nodes for Pascale (CV teammate):
+- `arm_camera_localizer.py` — subscribes to arm camera topics, stub output `/arm_camera/apple_location`
+- `overhead_camera_localizer.py` — subscribes to overhead camera topics, stub output `/overhead_camera/apple_location`
+Both should run without errors and log "CV NOT IMPLEMENTED" warnings as placeholders.

@@ -37,11 +37,37 @@ def generate_launch_description():
         ])}.items(),
     )
 
-    # Bridge Gazebo /clock to ROS so controller_manager gets sim time
+    # Bridge 1: /clock only — critical for controller_manager sim time
     clock_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
-        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
+        arguments=[
+            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+        ],
+    )
+
+    # Bridge 2: all camera topics — arm and overhead RGB + depth streams
+    camera_bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            # Arm RGB camera
+            '/arm_camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/arm_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+            # Arm depth camera
+            '/arm_depth_camera/image@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/arm_depth_camera/depth_image@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/arm_depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+            '/arm_depth_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+            # Overhead RGB camera
+            '/overhead_camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/overhead_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+            # Overhead depth camera
+            '/overhead_depth_camera/image@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/overhead_depth_camera/depth_image@sensor_msgs/msg/Image[gz.msgs.Image',
+            '/overhead_depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+            '/overhead_depth_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+        ],
     )
 
     # Publish the robot state
@@ -106,6 +132,7 @@ def generate_launch_description():
     return LaunchDescription([
         gazebo,
         clock_bridge,
+        camera_bridge,
         robot_state_publisher,
         spawn_robot,
         load_joint_state_broadcaster,

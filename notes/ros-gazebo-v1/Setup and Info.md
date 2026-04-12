@@ -105,9 +105,11 @@ ros2 launch ur3e_gazebo ur3e_gazebo.launch.py
 This will:
 1. Launch Gazebo with the grocery store world
 2. Start a clock bridge so ROS gets sim time from Gazebo
-3. Spawn the UR3e robot
-4. Start the `joint_state_broadcaster` controller
-5. Start the `joint_trajectory_controller` controller
+3. Start a camera bridge so all camera topics appear in ROS 2
+4. Spawn the UR3e robot
+5. Start the `joint_state_broadcaster` controller
+6. Start the `joint_trajectory_controller` controller
+7. Send the home pose command (arm moves to face the table)
 
 > ⚠️ **You must click Play in Gazebo before the controllers activate.**
 > Gazebo opens in a paused state. While paused, the `/clock` topic does not tick — and the
@@ -155,7 +157,8 @@ The `Universal_Robots_ROS2_Description/` package next to it is third-party — w
 
 - **Lines 18–24** — Generates the robot URDF by running `xacro` on our wrapper file. `ParameterValue(..., value_type=str)` prevents ROS 2 from misinterpreting the XML as YAML, which would crash the launch.
 - **Lines 27–38** — Starts Gazebo using `ros_gz_sim`'s built-in launch file, passing it the path to our world file.
-- **Lines 41–46** — The clock bridge node. This bridges Gazebo's internal `/clock` to a ROS `/clock` topic, which is what lets the `controller_manager` use simulated time instead of wall time. Without this the controller spawners time out.
+- **`clock_bridge` node** — Bridges Gazebo's internal `/clock` to a ROS `/clock` topic, which is what lets the `controller_manager` use simulated time instead of wall time. Without this the controller spawners time out. Kept as its own node so a camera issue can't crash it.
+- **`camera_bridge` node** — A second separate `parameter_bridge` that bridges all 12 camera topics (arm RGB, arm depth, overhead RGB, overhead depth — image, depth_image, points, camera_info for each) from Gazebo into ROS 2. Separated from the clock bridge for reliability.
 - **Lines 49–55** — `robot_state_publisher` reads the URDF and continuously publishes the transform tree (`/tf`) so other tools (RViz, etc.) know where each joint is.
 - **Lines 58–68** — `spawn_robot` tells Gazebo to pull the robot description off the `/robot_description` ROS topic and insert the robot into the simulation.
 - **Lines 71–84** — The two controller spawner nodes. They call the `controller_manager` service to load and activate `joint_state_broadcaster` and `joint_trajectory_controller`.
@@ -238,11 +241,13 @@ GroceryRobot/
 │       │   ├── launch/
 │       │   │   └── ur3e_gazebo.launch.py       # Entry point — starts everything
 │       │   ├── urdf/
-│       │   │   └── ur3e_gz.urdf.xacro          # Robot description + control wiring
+│       │   │   └── ur3e_gz.urdf.xacro          # Robot description + control wiring + arm cameras
 │       │   ├── config/
 │       │   │   └── ros2_controllers.yaml       # Controller definitions and joint list
 │       │   ├── worlds/
-│       │   │   └── grocery_world.sdf           # Gazebo world (ground, physics, lights)
+│       │   │   └── grocery_world.sdf           # Gazebo world (ground, table, apple, shelf, overhead camera)
+│       │   ├── ur3e_gazebo/
+│       │   │   └── home_pose.py                # One-shot node: sends arm to home pose after launch
 │       │   ├── setup.py                        # Tells colcon what files to install
 │       │   └── package.xml                     # Package metadata and dependencies
 │       └── Universal_Robots_ROS2_Description/  # Third-party — clone separately, never edit

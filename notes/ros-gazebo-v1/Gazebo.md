@@ -492,42 +492,39 @@ By default the arm starts with all joints at 0 — this puts it pointing straigh
 
 #### 7.1 Add a Camera and Depth Camera to the Robot Arm
 
-The cameras attach to the end of the arm — the `tool0` link (the very tip, where you'd mount a tool).
+The cameras attach near the end of the arm. **We mounted them on `wrist_3_link` (not `tool0`)** — see design decision note below.
 
-- [ ] Open `urdf/ur3e_gz.urdf.xacro`
-- [ ] At the bottom of the file (before the closing `</robot>` tag), add a `<gazebo reference="tool0">` block:
-  - [ ] Inside it, add a `<sensor>` element of type `"camera"` for the RGB camera
-    - Name it `arm_camera`
-    - Set `<update_rate>30</update_rate>` (30 frames per second)
-    - Image size: 640 × 480
-    - Topic: `/arm_camera/image`
-    - Set `<visualize>true</visualize>` so you can see the camera frustum in Gazebo GUI
-  - [ ] Add a second `<sensor>` element of type `"rgbd_camera"` for the depth camera
-    - Name it `arm_depth_camera`
-    - Set `<update_rate>15</update_rate>` (depth cameras are heavier — 15 fps is fine)
-    - Topic base: `/arm_depth_camera`
-    - This will auto-publish `/arm_depth_camera/image`, `/arm_depth_camera/depth_image`, and `/arm_depth_camera/points` (point cloud)
-
-  > 💡 **Camera pose within the sensor block:** Add a `<pose>` inside the `<sensor>` to offset the camera slightly from the tool0 origin. `<pose>0 0 0.05 0 0 0</pose>` puts it 5 cm "forward" of the tool tip. Adjust based on where your gripper ends up.
-
-  > ⚠️ **The Sensors system plugin must be loaded.** Gazebo cameras only work if the `gz-sim-sensors-system` plugin is enabled. Add it inside the sensor block:
-  > ```xml
-  > <plugin filename="gz-sim-sensors-system"
-  >         name="gz::sim::systems::Sensors">
-  >   <render_engine>ogre2</render_engine>
-  > </plugin>
-  > ```
-  > Without this, the camera sensor silently does nothing.
-
-  > ⚠️ **Run in a native terminal.** Camera rendering uses the GPU. This is even more of a reason to avoid the VSCode integrated terminal — GPU issues surface more often when sensors are active.
-
-- [ ] Rebuild the package after editing the xacro:
-  - [ ] 📁 **Run from:** `~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws`
-  ```bash
-  colcon build --packages-select ur3e_gazebo && source install/setup.bash
+- [x] Open `urdf/ur3e_gz.urdf.xacro`
+- [x] Added a `camera_link` (small box representing the camera body) and a fixed joint attaching it to `wrist_3_link`:
+  - Offset: 4 cm to the side (Y), 6 cm along the wrist axis (Z), angled ~17° down to see the gripper workspace
+  - `<origin xyz="0 0.04 0.06" rpy="0 0.3 0"/>`
+- [x] Added two `<gazebo reference="camera_link">` sensor blocks:
+  - RGB camera (`arm_rgb_camera`, type `camera`) — 640×480, 30 fps, topic `/arm_camera/image_raw`
+  - Depth camera (`arm_depth_camera`, type `rgbd_camera`) — 640×480, 30 fps, topic `/arm_depth_camera`
+- [x] Added the `gz-sim-sensors-system` plugin to `worlds/grocery_world.sdf` — **required for any camera to work in Gazebo**:
+  ```xml
+  <plugin name='gz::sim::systems::Sensors' filename='gz-sim-sensors-system'>
+    <render_engine>ogre2</render_engine>
+  </plugin>
   ```
-- [ ] Relaunch and check the Gazebo GUI — you should see a camera frustum (a cone/pyramid shape) at the end of the arm
-- [ ] ✅ Check: `gz topic -l` shows `/arm_camera/image` and `/arm_depth_camera/points`
+- [x] Rebuilt and relaunched. Confirmed via `gz topic -l | grep camera`:
+  - `/arm_camera/image_raw`
+  - `/arm_camera/camera_info`
+  - `/arm_depth_camera/image`
+  - `/arm_depth_camera/depth_image`
+  - `/arm_depth_camera/points`
+  - `/arm_depth_camera/camera_info`
+
+  > 📝 **Design decision — wrist_3_link instead of tool0:**
+  > Mounting on `tool0` risks a conflict when the gripper is added in Phase 8 — `tool0` is the
+  > conventional gripper attachment point. Using `wrist_3_link` as the parent keeps `tool0` free.
+  > The camera_link is offset so the view still covers the gripper workspace.
+
+  > ⚠️ **URDF `<material>` must have a `name` attribute.** A bare `<material><color rgba="..."/></material>` block (without `name="..."`) causes a parse error: "Visual material must contain a name attribute." Always write `<material name="something">`.
+
+  > ⚠️ **`gz_frame_id` is not a valid SDF element** in Gazebo Ionic. Adding `<gz_frame_id>` inside a sensor block causes warnings. Omit it.
+
+  > ⚠️ **Run in a native terminal.** Camera rendering uses the GPU — GPU issues surface more often in the VSCode integrated terminal.
 
 ---
 
@@ -535,64 +532,64 @@ The cameras attach to the end of the arm — the `tool0` link (the very tip, whe
 
 These cameras are fixed in the world — they don't move. They go in `worlds/grocery_world.sdf`.
 
-- [ ] Open `worlds/grocery_world.sdf`
-- [ ] Add a new model named `overhead_cameras`:
-  - [ ] `<static>true</static>`
-  - [ ] Position at approximately `(0.7, 0, 1.5, 0, 1.5708, 0)` — directly above the table, pointing straight down
-    - The pose `(x, y, z, roll, pitch, yaw)` — a pitch of `1.5708` (90°) rotates the camera to face downward
-  - [ ] Add a `<sensor>` of type `"camera"` named `overhead_camera`
-    - Update rate: 30 fps
-    - Topic: `/overhead_camera/image`
-    - A wider field of view helps see the whole table: `<horizontal_fov>1.5708</horizontal_fov>` (90°)
-  - [ ] Add a `<sensor>` of type `"rgbd_camera"` named `overhead_depth_camera`
-    - Update rate: 15 fps
-    - Topic base: `/overhead_depth_camera`
+- [x] Open `worlds/grocery_world.sdf`
+- [x] Added a new `static` model named `overhead_camera`:
+  - Pose: `0.35 0 1.2 0 1.5708 0` — centered over the table work area, 1.2 m up, pitched 90° to face straight down
+  - Small box visual (0.05 × 0.05 × 0.03 m) representing the camera body
+  - RGB camera sensor (`overhead_rgb_camera`, type `camera`) — 640×480, 30 fps, topic `/overhead_camera/image_raw`
+  - Depth camera sensor (`overhead_depth_camera`, type `rgbd_camera`) — 640×480, 30 fps, topic `/overhead_depth_camera`
+- [x] Relaunched and confirmed via `gz topic -l | grep camera`:
+  - `/overhead_camera/image_raw`
+  - `/overhead_camera/camera_info`
+  - `/overhead_depth_camera/image`
+  - `/overhead_depth_camera/depth_image`
+  - `/overhead_depth_camera/points`
+  - `/overhead_depth_camera/camera_info`
 
   > 💡 **Visualizing the camera direction:** In Gazebo, enable **View → Camera Frustums** in the GUI to see which way your cameras are pointing. If the frustum points the wrong direction, adjust the pitch angle in the pose.
 
-  > ⚠️ **Height matters.** Too high and the apple is a tiny speck. Too low and the camera clips the arm. 1.5 m above the table (so z ≈ 2.25 m total from ground) is a good starting point. Adjust based on what looks right in the GUI.
-
-- [ ] Relaunch and check:
-  - [ ] The overhead camera model appears in the Entity Tree
-  - [ ] `gz topic -l` shows `/overhead_camera/image` and `/overhead_depth_camera/points`
-- [ ] ✅ Check: using `gz topic echo /overhead_camera/image` you see data flowing (lots of numbers — that's the raw image bytes)
+  > 💡 **Why `rpy="0 1.5708 0"` (pitch 90°)?** In Gazebo, a camera's default "forward" direction is +X. Rotating 90° around Y points the sensor straight down (-Z). Without this rotation, the camera would be looking sideways instead of at the table.
 
 ---
 
 #### 7.3 Bridge Camera Topics from Gazebo to ROS
 
-Right now the camera topics exist in Gazebo but ROS 2 can't see them. You need to add them to the `ros_gz_bridge` node in the launch file.
+Right now the camera topics exist in Gazebo but ROS 2 can't see them. Bridge them in the launch file.
 
-- [ ] Open `launch/ur3e_gazebo.launch.py`
-- [ ] Find the existing `ros_gz_bridge` node (the one currently bridging `/clock`)
-- [ ] Add the following topics to its `arguments` list (one string per topic, using `@` syntax):
+- [x] Open `launch/ur3e_gazebo.launch.py`
+- [x] **Split the bridge into two separate nodes** (clock bridge and camera bridge):
+  - `clock_bridge` — bridges only `/clock` (critical infrastructure; keeps controllers alive)
+  - `camera_bridge` — bridges all 12 camera topics (sensor data; isolated so a camera issue can't kill the clock)
+  - Both nodes added to the `LaunchDescription` return list
 
-  ```
-  /arm_camera/image@sensor_msgs/msg/Image[gz.msgs.Image
-  /arm_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo
-  /arm_depth_camera/depth_image@sensor_msgs/msg/Image[gz.msgs.Image
-  /arm_depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked
-  /overhead_camera/image@sensor_msgs/msg/Image[gz.msgs.Image
-  /overhead_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo
-  /overhead_depth_camera/depth_image@sensor_msgs/msg/Image[gz.msgs.Image
-  /overhead_depth_camera/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked
-  ```
+  > 📝 **Design decision — two separate bridges:**
+  > Keeping `/clock` in its own bridge node means a camera issue (topic type mismatch, missing plugin,
+  > etc.) can't crash the clock bridge and kill your controllers. It also makes each node's purpose
+  > obvious and easier to debug independently.
 
   > 💡 **Reading the `@` syntax:** `topic_name@ROS_type[gz_type`
-  > - Everything before `@` is the topic name
-  > - Everything between `@` and `[` is the ROS 2 message type
-  > - Everything after `[` is the Gazebo message type
-  > The bridge converts between them automatically.
+  > - `@` separates the topic name from the type mapping
+  > - `[` = direction Gazebo → ROS (Gz publishes, ROS subscribes)
+  > - `]` = direction ROS → Gazebo
+  > - `@` between types (no bracket) = bidirectional
+  > We use `[` for all camera topics because data always flows out of the sim into ROS.
 
-  > ⚠️ **One bridge node, many topics.** Don't create a separate bridge node per topic — that wastes resources and causes conflicts. Pass all topics as a single comma-separated argument string to one bridge node.
-
-- [ ] Rebuild and relaunch
-- [ ] In a second terminal (with workspace sourced), check:
-  ```bash
-  ros2 topic list | grep camera
+- [x] Camera topics bridged (all 12 confirmed working):
   ```
-- [ ] ✅ Expected output — you should see all 8 camera topics showing up as ROS 2 topics
-- [ ] ✅ Bonus check: `ros2 topic hz /overhead_camera/image` should show ~30 Hz
+  /arm_camera/image_raw        → sensor_msgs/msg/Image
+  /arm_camera/camera_info      → sensor_msgs/msg/CameraInfo
+  /arm_depth_camera/image      → sensor_msgs/msg/Image
+  /arm_depth_camera/depth_image → sensor_msgs/msg/Image
+  /arm_depth_camera/points     → sensor_msgs/msg/PointCloud2
+  /arm_depth_camera/camera_info → sensor_msgs/msg/CameraInfo
+  /overhead_camera/image_raw   → sensor_msgs/msg/Image
+  /overhead_camera/camera_info → sensor_msgs/msg/CameraInfo
+  /overhead_depth_camera/image → sensor_msgs/msg/Image
+  /overhead_depth_camera/depth_image → sensor_msgs/msg/Image
+  /overhead_depth_camera/points → sensor_msgs/msg/PointCloud2
+  /overhead_depth_camera/camera_info → sensor_msgs/msg/CameraInfo
+  ```
+- [x] ✅ Verified: `ros2 topic list | grep camera` shows all 12 topics
 
 ---
 
