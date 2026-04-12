@@ -145,5 +145,100 @@
         </inertial>
       </link>
     </model>
+
+    <!-- ============================================================
+         SHELF (represents the fridge/refrigerator)
+         Positioned on the OPPOSITE side of the arm from the table.
+         The arm base is at (0,0,0). Table is at x=+0.6. Shelf is at x=-0.6.
+
+         TO ADJUST POSITION: change the <pose> on the <model> tag below.
+           - Move closer/further from arm: change the first number (x)
+           - Shift left/right: change the second number (y)
+           - The third number (z) should stay 0 — shelf sits on the floor
+
+         TO ADJUST OVERALL SIZE: scale the <size> values on each link.
+           - First number = width (left-right, along Y axis)
+           - Second number = depth (front-back, along X axis)
+           - Third number = height/thickness (along Z axis)
+    ============================================================ -->
+    <model name='shelf'>
+      <static>true</static>
+
+      <!-- Model origin is at floor level, centered on the shelf -->
+      <!-- TO MOVE THE SHELF: edit x (forward/back) and y (left/right) here -->
+      <pose>-0.55 0 0 0 0 0</pose>
+
+      <!-- BACK PANEL — the tall vertical back wall of the shelf -->
+      <!-- TO ADJUST: change size to make it wider (y), taller (z), or thicker (x) -->
+      <link name='back_panel'>
+        <!-- z=0.125 centers the panel vertically (panel is 0.25m tall, so center is at 0.125m) -->
+        <!-- TO ADJUST HEIGHT: change z here to half of whatever the panel height is -->
+        <pose>0 0 0.25 0 0 0</pose>
+        <collision name='collision'>
+          <geometry>
+            <!-- size: depth(x)=0.03m  width(y)=1.0m  height(z)=0.25m -->
+            <!-- TO MAKE WIDER: increase the second number -->
+            <!-- TO MAKE TALLER: increase the third number (and update the pose z above) -->
+            <box><size>0.03 1.0 0.5</size></box>
+          </geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <box><size>0.03 1.2 0.5</size></box>
+          </geometry>
+          <!-- Light grey color to suggest a fridge interior -->
+          <!-- TO CHANGE COLOR: edit R G B values (each 0.0–1.0) -->
+          <material>
+            <ambient>0.15 0.15 0.15 1</ambient>
+            <diffuse>0.15 0.15 0.15 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <!-- BOTTOM SHELF BOARD — sits on the floor -->
+      <!-- TO ADJUST: change the z in <pose> to raise or lower this board -->
+      <link name='shelf_board_bottom'>
+        <!-- z=0.0075 = half the thickness, so the board sits flush on the floor -->
+        <pose>0.15 0 0.0075 0 0 0</pose>
+        <collision name='collision'>
+          <geometry>
+            <!-- size: depth(x)=0.3m  width(y)=1.0m  thickness(z)=0.015m -->
+            <!-- TO MAKE DEEPER (more room front-to-back): increase the first number -->
+            <box><size>0.3 1.0 0.015</size></box>
+          </geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <box><size>0.3 1.0 0.015</size></box>
+          </geometry>
+          <material>
+            <ambient>0.15 0.15 0.15 1</ambient>
+            <diffuse>0.15 0.15 0.15 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+      <!-- MIDDLE SHELF BOARD -->
+      <!-- TO RAISE OR LOWER: change z in <pose> below -->
+      <link name='shelf_board_middle'>
+        <pose>0.15 0 0.3 0 0 0</pose>
+        <collision name='collision'>
+          <geometry>
+            <box><size>0.3 1.0 0.015</size></box>
+          </geometry>
+        </collision>
+        <visual name='visual'>
+          <geometry>
+            <box><size>0.3 1.0 0.015</size></box>
+          </geometry>
+          <material>
+            <ambient>0.15 0.15 0.15 1</ambient>
+            <diffuse>0.15 0.15 0.15 1</diffuse>
+          </material>
+        </visual>
+      </link>
+
+    </model>
+
   </world>
 </sdf>

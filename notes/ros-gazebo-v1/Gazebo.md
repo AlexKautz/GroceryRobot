@@ -404,14 +404,14 @@ ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_m
 
 #### 6.3 Add a Shelf on the Other Side
 
-- [ ] In `grocery_world.sdf`, add a shelf model:
-  - [ ] `<static>true</static>` — the shelf never moves
-  - [ ] Position at approximately `(-0.7, 0, 0)` — 70 cm behind the arm (opposite the table)
-  - [ ] Build it from multiple box links:
-    - [ ] A back panel (tall vertical box, ~0.8 m wide × 1.2 m tall × 0.03 m deep)
-    - [ ] Three horizontal shelf boards at different heights (e.g., z = 0.3, 0.6, 0.9 m)
-    - [ ] Each shelf board: ~0.8 m wide × 0.35 m deep × 0.03 m thick
-  - [ ] Give it a light grey or white color to suggest a fridge interior
+- [x] In `grocery_world.sdf`, add a shelf model:
+  - [x] `<static>true</static>` — the shelf never moves
+  - [x] Position at approximately `(-0.7, 0, 0)` — 70 cm behind the arm (opposite the table)
+  - [x] Build it from multiple box links:
+    - [x] A back panel (tall vertical box, ~0.8 m wide × 1.2 m tall × 0.03 m deep)
+    - [x] Three horizontal shelf boards at different heights (e.g., z = 0.3, 0.6, 0.9 m)
+    - [x] Each shelf board: ~0.8 m wide × 0.35 m deep × 0.03 m thick
+  - [x] Give it a light grey or white color to suggest a fridge interior
 
   > 💡 **Hint — Keep it simple.** A shelf is just a few boxes. Don't overthink it. The team just needs something to place groceries on — it doesn't need to look photo-realistic.
 
@@ -419,8 +419,8 @@ ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_m
 
   > ⚠️ **Multi-link models in SDF:** Each separate board in the shelf is a `<link>`. All links go inside the same `<model>` tag. You do NOT need joints between them — since the whole model is static, they just exist as separate rigid shapes.
 
-- [ ] Relaunch and confirm the shelf appears on the opposite side of the arm from the table
-- [ ] ✅ Check: the shelf is upright, at a reachable distance, and facing the arm
+- [x] Relaunch and confirm the shelf appears on the opposite side of the arm from the table
+- [x] ✅ Check: the shelf is upright, at a reachable distance, and facing the arm
 
 ---
 
