@@ -30,6 +30,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'home_pose = ur3e_gazebo.home_pose:main',
         ],
     },
 )

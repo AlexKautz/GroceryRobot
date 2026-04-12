@@ -428,6 +428,31 @@ ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_m
 
 By default the arm starts with all joints at 0 — this puts it pointing straight up, which isn't useful. We want it to start "looking at" the table (facing +X, arm slightly lowered).
 
+> 💡 **`initial_value` vs. home pose — they are different things:**
+>
+> - **`initial_value`** (set in `urdf/ur3e_gz.urdf.xacro`, inside the `<ros2_control>` block) is a
+>   hint to the **Gazebo physics engine**. It sets where the joint is physically placed when the
+>   simulation first loads — before any controller has started. The arm teleports to that position
+>   at spawn time.
+>
+> - **Home pose command** (a `JointTrajectory` message sent through the `joint_trajectory_controller`)
+>   is a live motion command sent **through the ROS 2 controller**. The controller actively drives
+>   each joint to the target angles — the arm visibly moves there after launch.
+>
+> **Why use both:** `initial_value` sets the physics starting point so there's no jitter on spawn.
+> The home pose command ensures the controller is actively holding the pose. In practice, try
+> `initial_value` alone first — if the arm drifts or jolts when the controller activates, add the
+> trajectory command as a second layer.
+>
+> **Visual confirmation tip:** Since `initial_value` is currently `0.0` for all joints (arm pointing
+> up) and the home pose will be the facing-table angles, you'll naturally see the arm move every
+> time you start the sim — which confirms the controller chain is working correctly.
+>
+> ⚠️ **Controllers only activate after you click Play in Gazebo.** The sim opens paused, `/clock`
+> doesn't tick while paused, and the `controller_manager` needs `/clock` to run. The arm will sit
+> still at its spawn position until you hit Play — at that point the controllers activate and any
+> home pose command fires. This is expected behavior.
+
 - [ ] Find a good "home" pose by manually moving joints in the Gazebo GUI:
   - [ ] Launch the simulation
   - [ ] In Gazebo, open the **Entity Tree** panel and find the `ur3e` model

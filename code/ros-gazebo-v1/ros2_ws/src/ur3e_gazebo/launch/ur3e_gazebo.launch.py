@@ -75,7 +75,13 @@ def generate_launch_description():
         arguments=['joint_trajectory_controller', '--controller-manager', '/controller_manager'],
     )
 
-    # Chain: spawn_robot -> joint_state_broadcaster -> joint_trajectory_controller
+    # Send the home pose command after joint_trajectory_controller is active
+    home_pose = Node(
+        package='ur3e_gazebo',
+        executable='home_pose',
+    )
+
+    # Chain: spawn_robot -> joint_state_broadcaster -> joint_trajectory_controller -> home_pose
     load_joint_state_broadcaster = RegisterEventHandler(
         event_handler=OnProcessExit(
             target_action=spawn_robot,
@@ -90,6 +96,13 @@ def generate_launch_description():
         )
     )
 
+    load_home_pose = RegisterEventHandler(
+        event_handler=OnProcessExit(
+            target_action=joint_trajectory_controller_spawner,
+            on_exit=[home_pose],
+        )
+    )
+
     return LaunchDescription([
         gazebo,
         clock_bridge,
@@ -97,4 +110,5 @@ def generate_launch_description():
         spawn_robot,
         load_joint_state_broadcaster,
         load_joint_trajectory_controller,
+        load_home_pose,
     ])

@@ -109,6 +109,19 @@ This will:
 4. Start the `joint_state_broadcaster` controller
 5. Start the `joint_trajectory_controller` controller
 
+> ⚠️ **You must click Play in Gazebo before the controllers activate.**
+> Gazebo opens in a paused state. While paused, the `/clock` topic does not tick — and the
+> `controller_manager` needs `/clock` to initialize. The full startup chain only completes
+> once you click the Play button:
+>
+> 1. Gazebo opens (paused) → robot spawns at its starting position
+> 2. Controllers wait — they need `/clock` to run
+> 3. **You click Play** → `/clock` starts ticking
+> 4. `controller_manager` initializes → controllers activate in sequence
+> 5. Any startup motion commands (e.g., move to home pose) fire here
+>
+> This means the robot will sit still in its spawn pose until you hit Play. That is expected.
+
 ### Verify controllers are running
 
 In a second terminal (with the workspace sourced):
