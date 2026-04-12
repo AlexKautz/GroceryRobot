@@ -83,4 +83,76 @@
     </plugin>
   </gazebo>
 
+  <!-- ===== ARM CAMERAS ===== -->
+  <!-- Mounted on wrist_3_link (not tool0) so the gripper can attach to tool0 without conflict.
+       Offset 4 cm to the side and 6 cm along the wrist axis, angled 17° down to see the
+       gripper workspace. Position may need tuning once the gripper is added in Phase 8. -->
+
+  <!-- Camera mount link — small box representing the camera body -->
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.02 0.06 0.02"/>
+      </geometry>
+      <material name="camera_black">
+        <color rgba="0.1 0.1 0.1 1.0"/>
+      </material>
+    </visual>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="0.0001" iyy="0.0001" izz="0.0001" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+
+  <!-- Fixed joint: attaches camera_link to wrist_3_link -->
+  <joint name="camera_joint" type="fixed">
+    <parent link="wrist_3_link"/>
+    <child link="camera_link"/>
+    <!-- 4 cm to the side (Y), 6 cm along the wrist axis (Z), angled ~17 deg down -->
+    <origin xyz="0 0.04 0.06" rpy="0 0.3 0"/>
+  </joint>
+
+  <!-- RGB camera sensor -->
+  <gazebo reference="camera_link">
+    <sensor name="arm_rgb_camera" type="camera">
+      <always_on>1</always_on>
+      <update_rate>30</update_rate>
+      <camera name="arm_camera">
+        <horizontal_fov>1.047</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>RGB_INT8</format>
+        </image>
+        <clip>
+          <near>0.01</near>
+          <far>10.0</far>
+        </clip>
+      </camera>
+      <topic>/arm_camera/image_raw</topic>
+    </sensor>
+  </gazebo>
+
+  <!-- Depth (RGBD) camera sensor -->
+  <gazebo reference="camera_link">
+    <sensor name="arm_depth_camera" type="rgbd_camera">
+      <always_on>1</always_on>
+      <update_rate>30</update_rate>
+      <camera name="arm_depth">
+        <horizontal_fov>1.047</horizontal_fov>
+        <image>
+          <width>640</width>
+          <height>480</height>
+          <format>RGB_INT8</format>
+        </image>
+        <clip>
+          <near>0.01</near>
+          <far>10.0</far>
+        </clip>
+      </camera>
+      <topic>/arm_depth_camera</topic>
+    </sensor>
+  </gazebo>
+
 </robot>
