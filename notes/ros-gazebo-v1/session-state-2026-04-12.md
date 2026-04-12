@@ -66,7 +66,7 @@ Click Play in Gazebo to activate the controllers. The arm faces the table at a n
 - Phase 7.1 (arm cameras in URDF): ✅ complete
 - Phase 7.2 (overhead camera in SDF): ✅ complete
 - Phase 7.3 (bridge all camera topics): ✅ complete
-- Phase 7.4 (stub CV nodes): NOT YET STARTED
+- Phase 7.4 (stub CV nodes): ✅ complete
 - Phase 8 (gripper + pick): NOT YET STARTED
 
 ---
@@ -98,9 +98,14 @@ Click Play in Gazebo to activate the controllers. The arm faces the table at a n
 
 ---
 
-## What's next — Phase 7.4: Stub CV Nodes
+## Phase 7.4 summary — Stub CV Nodes (COMPLETE)
 
-Create two Python nodes for Pascale (CV teammate):
-- `arm_camera_localizer.py` — subscribes to arm camera topics, stub output `/arm_camera/apple_location`
-- `overhead_camera_localizer.py` — subscribes to overhead camera topics, stub output `/overhead_camera/apple_location`
-Both should run without errors and log "CV NOT IMPLEMENTED" warnings as placeholders.
+- `arm_camera_localizer.py` — subscribes to `/arm_camera/image_raw`, `/arm_depth_camera/depth_image`, `/arm_depth_camera/camera_info`. Logs mean R/G/B and depth stats. Publishes dummy `/arm_camera/apple_location`. tf2 wired up with `_lookup_camera_to_world()` helper.
+- `overhead_camera_localizer.py` — same pattern, subscribes to overhead topics. Fixed camera so transform to world is constant. Publishes dummy `/overhead_camera/apple_location`.
+- Both registered in `setup.py` and tested — start cleanly, log diagnostics, publish placeholder.
+
+## What's next — Phase 8: Gripper and Hard-Coded Pick Motion
+
+- 8.1: Add a simple two-finger gripper to `urdf/ur3e_gz.urdf.xacro` (attached to `tool0`)
+- 8.2: Add gripper controller to `config/ros2_controllers.yaml` and wire into launch file
+- 8.3: Write a hard-coded pick-and-place node using pre-set joint angles

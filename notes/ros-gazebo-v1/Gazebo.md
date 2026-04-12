@@ -595,72 +595,54 @@ Right now the camera topics exist in Gazebo but ROS 2 can't see them. Bridge the
 
 #### 7.4 Create the Arm Camera Localizer Node (Stub for CV Teammate)
 
-This is a ROS 2 Python node that subscribes to the arm's camera feeds and is supposed to return the 3D location of the apple. **You are not implementing the CV** — you're creating the scaffold with detailed comments so your CV teammate (Pascale) can fill it in.
+This node subscribes to the arm's camera feeds and publishes the estimated 3D location of the apple. The CV logic is left as a scaffold for the CV teammate to fill in.
 
-- [ ] Create a new file: `ur3e_gazebo/arm_camera_localizer.py`
-  - [ ] The node should be named `arm_camera_localizer`
-  - [ ] Subscribe to these topics:
-    - `/arm_camera/image` (`sensor_msgs/msg/Image`)
+- [x] Created `ur3e_gazebo/arm_camera_localizer.py`
+  - Node name: `arm_camera_localizer`
+  - Subscribes to:
+    - `/arm_camera/image_raw` (`sensor_msgs/msg/Image`)
     - `/arm_depth_camera/depth_image` (`sensor_msgs/msg/Image`)
-    - `/arm_depth_camera/points` (`sensor_msgs/msg/PointCloud2`)
-  - [ ] Publish to one output topic:
-    - `/arm_camera/apple_location` (`geometry_msgs/msg/PointStamped`) — the estimated 3D position of the apple
-  - [ ] Fill the body with **detailed comments** explaining:
-    - What each subscribed topic contains (e.g., "Image is a 640×480 RGB frame, each pixel is 3 bytes R, G, B")
-    - What the depth image contains ("each pixel is a float32 distance in meters from the camera")
-    - What a PointCloud2 is ("a list of 3D points in the camera's coordinate frame — each point is an (x, y, z) in meters")
-    - How ROS coordinate frames work (the published location needs to be in the `world` frame, not the camera frame)
-    - Where to use `tf2` to transform a point from camera frame to world frame
-    - A stub callback that logs a warning "CV NOT IMPLEMENTED — returning dummy location" and publishes `(0, 0, 0)` as a placeholder
+    - `/arm_depth_camera/camera_info` (`sensor_msgs/msg/CameraInfo`)
+  - Publishes: `/arm_camera/apple_location` (`geometry_msgs/msg/PointStamped`)
+  - Diagnostic logging: mean R/G/B per frame (throttled 2s), depth min/max/mean (throttled 2s)
+  - tf2 buffer + listener wired up; `_lookup_camera_to_world()` helper provided
+  - Full CV pipeline outlined in docstring with hints at each TODO step
+  - Dummy `(0, 0, 0)` publish with `CV NOT IMPLEMENTED` warning as placeholder
 
-  > 💡 **Hint for Pascale (CV teammate):** The typical pipeline for finding an apple:
-  > 1. Receive the RGB image
-  > 2. Run object detection (e.g., YOLO) to get a bounding box of the apple in image pixels
-  > 3. Use the center pixel of the bounding box to look up the depth value in the depth image
-  > 4. Convert pixel + depth → 3D point in camera frame (using camera intrinsics from `/camera_info`)
-  > 5. Transform that 3D point from camera frame to world frame using `tf2`
-  > 6. Publish as a `PointStamped`
+  > 📝 **Design note — wrist camera coordinate frames:**
+  > The arm camera moves with the arm, so every frame the transform from
+  > `camera_link` to `world` is different. tf2 handles this automatically via
+  > the `_lookup_camera_to_world()` helper. The CV implementation must always
+  > transform detections to world frame before publishing.
 
-  > 💡 **What `geometry_msgs/msg/PointStamped` looks like:**
-  > ```
-  > header:
-  >   frame_id: "world"   # coordinate frame this point is in
-  > point:
-  >   x: 0.7   # meters from world origin
-  >   y: 0.0
-  >   z: 0.79
-  > ```
-
-  > ⚠️ **Coordinate frames matter enormously.** A point `(0.3, 0, 0.1)` in the arm camera's frame means something completely different from `(0.3, 0, 0.1)` in the world frame. The arm camera moves with the arm, so its frame is always changing. Always transform to world frame before publishing.
-
-- [ ] Register the node as an entry point in `setup.py`:
-  ```python
-  'arm_camera_localizer = ur3e_gazebo.arm_camera_localizer:main',
-  ```
-- [ ] Rebuild: `colcon build --packages-select ur3e_gazebo && source install/setup.bash`
-- [ ] ✅ Test: `ros2 run ur3e_gazebo arm_camera_localizer` — it should start without errors and log the "CV NOT IMPLEMENTED" warning at 30 Hz
+- [x] Registered in `setup.py` as `arm_camera_localizer`
+- [x] ✅ Tested: node starts, logs RGB and depth diagnostics, publishes dummy location
 
 ---
 
-#### 7.5 Create the Overhead Camera Localizer Node (Stub for CV Teammate)
+#### 7.5 Overhead Camera Localizer Node (Stub for CV Teammate)
 
-Same idea as above, but uses the fixed overhead cameras. Overhead cameras have a simpler geometry (they don't move), so coordinate frame transforms are easier.
+Same pattern as the arm node, but uses the fixed overhead cameras. Simpler coordinate frame math since the camera never moves.
 
-- [ ] Create a new file: `ur3e_gazebo/overhead_camera_localizer.py`
-  - [ ] Subscribe to:
-    - `/overhead_camera/image` (`sensor_msgs/msg/Image`)
+- [x] Created `ur3e_gazebo/overhead_camera_localizer.py`
+  - Node name: `overhead_camera_localizer`
+  - Subscribes to:
+    - `/overhead_camera/image_raw` (`sensor_msgs/msg/Image`)
     - `/overhead_depth_camera/depth_image` (`sensor_msgs/msg/Image`)
-    - `/overhead_depth_camera/points` (`sensor_msgs/msg/PointCloud2`)
-  - [ ] Publish to:
-    - `/overhead_camera/apple_location` (`geometry_msgs/msg/PointStamped`)
-  - [ ] Fill with the same style of detailed comments as the arm node, with these additional notes:
-    - "The overhead camera is fixed — it never moves. Its frame_id is `overhead_camera_frame`. This makes the tf2 transform simpler since the transform is static."
-    - "An overhead view is especially good for X and Y position (left/right, front/back). Depth gives you Z."
-    - "For object detection from above, colour-based segmentation (finding red pixels) can work as a first simple approach before using YOLO."
-  - [ ] Add a stub callback that logs "OVERHEAD CV NOT IMPLEMENTED" and publishes `(0, 0, 0)`
-- [ ] Register in `setup.py` as `overhead_camera_localizer`
-- [ ] Rebuild and test
-- [ ] ✅ Test: `ros2 run ur3e_gazebo overhead_camera_localizer` — starts and logs the not-implemented warning
+    - `/overhead_depth_camera/camera_info` (`sensor_msgs/msg/CameraInfo`)
+  - Publishes: `/overhead_camera/apple_location` (`geometry_msgs/msg/PointStamped`)
+  - Diagnostic logging: mean R/G/B per frame (throttled 2s), depth min/max/mean (throttled 2s)
+  - tf2 buffer + listener wired up; `_lookup_camera_to_world()` uses `overhead_camera_link` frame
+  - Notes in docstring: overhead view is good for X/Y; depth gives Z; transform is constant
+  - Dummy `(0, 0, 0)` publish with `CV NOT IMPLEMENTED` warning as placeholder
+
+  > 📝 **Design note — fixed camera coordinate frames:**
+  > Because the overhead camera never moves, the transform from
+  > `overhead_camera_link` to `world` is constant. It only needs to be looked
+  > up once, unlike the arm camera which changes with every joint movement.
+
+- [x] Registered in `setup.py` as `overhead_camera_localizer`
+- [x] ✅ Tested: node starts, logs RGB and depth diagnostics, publishes dummy location
 
 ---
 

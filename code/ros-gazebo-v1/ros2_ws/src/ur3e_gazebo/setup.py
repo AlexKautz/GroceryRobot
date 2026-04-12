@@ -31,6 +31,8 @@ setup(
     entry_points={
         'console_scripts': [
             'home_pose = ur3e_gazebo.home_pose:main',
+            'arm_camera_localizer = ur3e_gazebo.arm_camera_localizer:main',
+            'overhead_camera_localizer = ur3e_gazebo.overhead_camera_localizer:main',
         ],
     },
 )
