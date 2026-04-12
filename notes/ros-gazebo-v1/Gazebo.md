@@ -453,31 +453,28 @@ By default the arm starts with all joints at 0 — this puts it pointing straigh
 > still at its spawn position until you hit Play — at that point the controllers activate and any
 > home pose command fires. This is expected behavior.
 
-- [ ] Find a good "home" pose by manually moving joints in the Gazebo GUI:
-  - [ ] Launch the simulation
-  - [ ] In Gazebo, open the **Entity Tree** panel and find the `ur3e` model
-  - [ ] Use the **Component Inspector** to tweak joint angles manually, OR...
-  - [ ] Use the ROS topic command to send joint targets and find a pose where the arm is facing the table at a good working height
+- [x] Find a good "home" pose — decided on the following angles:
+  - `shoulder_pan_joint`: `0.0` (facing +X toward table)
+  - `shoulder_lift_joint`: `-1.57` (arm sweeps forward)
+  - `elbow_joint`: `1.57` (elbow bent, arm reaches out)
+  - `wrist_1_joint`: `-1.57` (wrist level)
+  - `wrist_2_joint`: `0.0`
+  - `wrist_3_joint`: `0.0`
 
-  > 💡 **A good starting pose for facing +X with arm at mid-height:**
-  > - `shoulder_pan_joint`: `0.0` (already facing +X)
-  > - `shoulder_lift_joint`: `-1.57` (−90°, points arm forward instead of up)
-  > - `elbow_joint`: `1.57` (90°, bends elbow down)
-  > - `wrist_1_joint`: `-1.57` (points wrist down)
-  > - `wrist_2_joint`: `0.0`
-  > - `wrist_3_joint`: `0.0`
-  > This gives a natural "ready to pick" posture. Adjust to taste.
+- [x] Set home pose angles as `initial_value` in `urdf/ur3e_gz.urdf.xacro` (inside the `<ros2_control>` block for each joint)
 
-- [ ] Once you have the joint angles you like, set them as the arm's initial pose in the **launch file**:
-  - [ ] In `ur3e_gazebo.launch.py`, find the `spawn_robot` node
-  - [ ] Add `-param initial_positions_file` arguments, OR
-  - [ ] More simply: send the pose via a `JointTrajectory` command in a startup script right after launch
+- [x] Created `ur3e_gazebo/home_pose.py` — a one-shot ROS 2 node that publishes a single `JointTrajectory` command to the home pose angles, then exits cleanly
 
-  > 💡 **Easiest approach:** Create a tiny Python script `scripts/move_to_home.py` that publishes one `JointTrajectory` message to move the arm to the home pose, and run it manually after launch. You can automate it later.
+- [x] Wired `home_pose` into the launch file, chained after `joint_trajectory_controller` activates via `RegisterEventHandler` / `OnProcessExit`
 
-  > ⚠️ **Don't hardcode joint angles in the SDF.** Joint initial positions are set through the launch/controller system, not in the world file. The world file only defines static environment objects.
+- [x] Registered `home_pose` as a `console_scripts` entry point in `setup.py` and rebuilt
 
-- [ ] ✅ Check: after launching, the arm naturally faces the table and apple without needing manual intervention
+- [x] ✅ Check: arm spawns facing the table on every launch. `home_pose` node fires after Play is clicked and exits cleanly (confirmed in logs).
+
+  > 📝 **Design decision:** Both `initial_value` and the home pose command were set to the same
+  > angles. The arm spawns directly in the correct position — no visible movement after clicking
+  > Play. This is intentional: `initial_value` prevents physics jitter on spawn, and the
+  > `home_pose` command ensures the controller is actively holding the pose.
 
 ---
 
