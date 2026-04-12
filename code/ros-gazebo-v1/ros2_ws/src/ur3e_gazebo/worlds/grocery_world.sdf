@@ -110,5 +110,40 @@
         </visual>
       </link>
     </model>
+    <model name="apple">
+      <static>false</static>
+      <pose>0.35 0 0.065 0 0 0</pose>
+      <link name="apple_link">
+        <collision name="collision">
+          <geometry>
+            <sphere>
+              <radius>0.04</radius>
+            </sphere>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <sphere>
+              <radius>0.04</radius>
+            </sphere>
+          </geometry>
+          <material>
+            <ambient>0.8 0.1 0.1 1</ambient>
+            <diffuse>0.8 0.1 0.1 1</diffuse>
+          </material>
+        </visual>
+        <inertial>
+          <mass>0.15</mass>
+          <inertia>
+            <ixx>0.000096</ixx>
+            <iyy>0.000096</iyy>
+            <izz>0.000096</izz>
+            <ixy>0</ixy>
+            <ixz>0</ixz>
+            <iyz>0</iyz>
+          </inertia>
+        </inertial>
+      </link>
+    </model>
   </world>
 </sdf>

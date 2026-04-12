@@ -361,12 +361,12 @@ ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_m
 
 #### 6.1 Add a Table on One Side of the Arm
 
-- [ ] Open `worlds/grocery_world.sdf`
-- [ ] Inside the `<world>` tag (after the existing lighting and ground plane), add a table model:
-  - [ ] The table should be `<static>true</static>` — it never moves
-  - [ ] Position it at approximately `(0.7, 0, 0)` — roughly 70 cm in front of the arm
-  - [ ] A simple table is just a flat box (the top) at height ~0.75 m, plus four leg boxes
-  - [ ] Give the table a brown color using `<ambient>` and `<diffuse>` RGBA values
+- [x] Open `worlds/grocery_world.sdf`
+- [x] Inside the `<world>` tag (after the existing lighting and ground plane), add a table model:
+  - [x] The table should be `<static>true</static>` — it never moves
+  - [x] Position it at approximately `(0.7, 0, 0)` — roughly 70 cm in front of the arm
+  - [x] A simple table is just a flat box (the top) at height ~0.75 m, plus four leg boxes
+  - [x] Give the table a brown color using `<ambient>` and `<diffuse>` RGBA values
 
   > 💡 **Hint — Table height:** A standard table is 0.75 m tall. The arm base is at ground level (z=0). The arm's working range is roughly 0.3–1.0 m above its base, so a 0.75 m table puts the apple right in the middle of its reach.
 
@@ -374,20 +374,20 @@ ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_m
 
   > ⚠️ **Every `<link>` needs both `<visual>` AND `<collision>`** if you want the arm to interact with it. A visual-only object is invisible to physics and the arm will pass right through it.
 
-- [ ] Save the file and relaunch: `ros2 launch ur3e_gazebo ur3e_gazebo.launch.py`
-- [ ] Confirm the table appears in the Gazebo GUI at the right position
-- [ ] ✅ Check: the table is NOT floating and NOT sunken into the ground
+- [x] Save the file and relaunch: `ros2 launch ur3e_gazebo ur3e_gazebo.launch.py`
+- [x] Confirm the table appears in the Gazebo GUI at the right position
+- [x] ✅ Check: the table is NOT floating and NOT sunken into the ground
 
 ---
 
 #### 6.2 Add an Apple on the Table
 
-- [ ] In the same `grocery_world.sdf`, add an apple model:
-  - [ ] Use a `<sphere>` geometry with radius ~`0.04` (4 cm — realistic apple size)
-  - [ ] Set `<static>false</static>` — the apple should respond to physics (it can be grabbed)
-  - [ ] Position it at `(0.7, 0, 0.79)` — table height (0.75) + tabletop thickness (0.025) + apple radius (0.04) ≈ 0.815... adjust until it sits neatly on the surface
-  - [ ] Give it a red color: ambient/diffuse `(0.8, 0.1, 0.1, 1.0)`
-  - [ ] Add an `<inertial>` block — physics objects must have mass and inertia or Gazebo will warn/explode
+- [x] In the same `grocery_world.sdf`, add an apple model:
+  - [x] Use a `<sphere>` geometry with radius ~`0.04` (4 cm — realistic apple size)
+  - [x] Set `<static>false</static>` — the apple should respond to physics (it can be grabbed)
+  - [x] Position it at `(0.7, 0, 0.79)` — table height (0.75) + tabletop thickness (0.025) + apple radius (0.04) ≈ 0.815... adjust until it sits neatly on the surface
+  - [x] Give it a red color: ambient/diffuse `(0.8, 0.1, 0.1, 1.0)`
+  - [x] Add an `<inertial>` block — physics objects must have mass and inertia or Gazebo will warn/explode
     - Mass: `0.15` kg (a real apple is ~150 g)
     - Inertia for a sphere: `ixx = iyy = izz = (2/5) * mass * radius²` = `0.000096`
 
@@ -397,8 +397,8 @@ ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_m
 
   > ⚠️ **Don't make the apple static.** It needs to be a physics object so the gripper can interact with it. If it's static, the gripper will just clip through it.
 
-- [ ] Relaunch and confirm the apple appears sitting on the table
-- [ ] ✅ Check: the apple stays on the table and doesn't fall through or fly away when the simulation starts
+- [x] Relaunch and confirm the apple appears sitting on the table
+- [x] ✅ Check: the apple stays on the table and doesn't fall through or fly away when the simulation starts
 
 ---
 
