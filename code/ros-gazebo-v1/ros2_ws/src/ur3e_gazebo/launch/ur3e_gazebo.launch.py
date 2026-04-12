@@ -101,7 +101,11 @@ def generate_launch_description():
         arguments=['joint_trajectory_controller', '--controller-manager', '/controller_manager'],
     )
 
-    # Send the home pose command after joint_trajectory_controller is active
+    # Send the home pose command after joint_trajectory_controller is active.
+    # Gripper fingers are now part of joint_trajectory_controller — no separate
+    # gripper spawner needed.
+    # TO SWITCH TO ROBOTIQ 2F-85: restore a gripper_controller_spawner node here
+    # and chain it between joint_trajectory_controller and home_pose.
     home_pose = Node(
         package='ur3e_gazebo',
         executable='home_pose',

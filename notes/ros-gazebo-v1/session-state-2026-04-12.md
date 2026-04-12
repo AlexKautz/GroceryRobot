@@ -67,7 +67,9 @@ Click Play in Gazebo to activate the controllers. The arm faces the table at a n
 - Phase 7.2 (overhead camera in SDF): ✅ complete
 - Phase 7.3 (bridge all camera topics): ✅ complete
 - Phase 7.4 (stub CV nodes): ✅ complete
-- Phase 8 (gripper + pick): NOT YET STARTED
+- Phase 8.1 (gripper URDF): ✅ complete
+- Phase 8.2 (gripper controller): ✅ complete
+- Phase 8.3–8.5 (pick-and-place): not started
 
 ---
 
@@ -104,8 +106,62 @@ Click Play in Gazebo to activate the controllers. The arm faces the table at a n
 - `overhead_camera_localizer.py` — same pattern, subscribes to overhead topics. Fixed camera so transform to world is constant. Publishes dummy `/overhead_camera/apple_location`.
 - Both registered in `setup.py` and tested — start cleanly, log diagnostics, publish placeholder.
 
-## What's next — Phase 8: Gripper and Hard-Coded Pick Motion
+---
 
-- 8.1: Add a simple two-finger gripper to `urdf/ur3e_gz.urdf.xacro` (attached to `tool0`)
-- 8.2: Add gripper controller to `config/ros2_controllers.yaml` and wire into launch file
-- 8.3: Write a hard-coded pick-and-place node using pre-set joint angles
+## Phase 8 summary — Gripper (COMPLETE through 8.2)
+
+### 8.1 — Custom two-finger gripper in URDF
+- Added `gripper_base_link` (palm, 12×6×4 cm) fixed to `tool0`
+- Added `left_finger_link` and `right_finger_link` (1.5×4×10 cm each) as prismatic joints
+- Left finger axis +X, right finger axis −X — both open outward to 5 cm each side
+- Joint limits: `lower="-0.001" upper="0.051"` — 1 mm buffer on each side prevents constant `JointSaturationLimiter` errors at rest position (IEEE negative zero issue)
+- `<dynamics damping="0.5" friction="0.0"/>` on both joints for stable response
+- All wrapped in `BEGIN CUSTOM GRIPPER` / `END CUSTOM GRIPPER` comment blocks
+- Robotiq 2F-85 5-step upgrade path documented in URDF comments and Gazebo.md
+
+### 8.2 — Gripper wired into joint_trajectory_controller
+- Added `left_finger_joint` and `right_finger_joint` to `joint_trajectory_controller` in `ros2_controllers.yaml`
+- Added `allow_partial_joints_goal: true` — send trajectory for just the fingers without specifying arm joints
+- Updated `home_pose.py` to include both finger joints at `0.0` (closed) in `HOME_POSE` dict
+- No separate gripper controller spawner — launch chain unchanged
+- Open/close verified working via topic commands (see Gripper Testing Guide.md)
+
+---
+
+## Current state
+
+**Simulation fully working with arm home pose and functional gripper.** Launch:
+
+```bash
+source /opt/ros/kilted/setup.bash
+cd ~/Code/ROS/GroceryRobot/code/ros-gazebo-v1/ros2_ws
+source install/setup.bash
+ros2 launch ur3e_gazebo ur3e_gazebo.launch.py
+```
+
+Click Play in Gazebo. Arm moves to home pose facing the table, gripper starts closed.
+
+---
+
+## Phase progress
+
+- Phases 1–5: ✅ complete
+- Phase 6.1 (table): ✅ complete
+- Phase 6.2 (apple): ✅ complete
+- Phase 6.3 (shelf): ✅ complete
+- Phase 6.4 (arm home pose): ✅ complete
+- Phase 7.1 (arm cameras in URDF): ✅ complete
+- Phase 7.2 (overhead camera in SDF): ✅ complete
+- Phase 7.3 (bridge all camera topics): ✅ complete
+- Phase 7.4 (stub CV nodes): ✅ complete
+- Phase 8.1 (gripper URDF): ✅ complete
+- Phase 8.2 (gripper controller): ✅ complete
+- Phase 8.3 (find hard-coded joint angles): not started
+- Phase 8.4 (pick-and-place node): not started
+- Phase 8.5 (full test): not started
+
+## What's next
+
+- 8.3: Launch the sim, manually move the arm to each pose (approach, grasp, lift, transport, place), record joint angles from `ros2 topic echo /joint_states --once`
+- 8.4: Write `pick_and_place.py` — sequences through those angles with gripper open/close at the right moments
+- 8.5: End-to-end test of the full pick sequence

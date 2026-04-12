@@ -648,84 +648,81 @@ Same pattern as the arm node, but uses the fixed overhead cameras. Simpler coord
 
 ### Phase 8: Gripper and Hard-Coded Pick Motion
 
-**Goal:** Attach a simple gripper to the arm's tool0 link, wire it up as a controller, and write a Python node that moves the arm through a complete pick-and-place sequence using hard-coded joint angles. The apple location is fixed — making it dynamic from CV output is Pascale's job.
+**Goal:** Attach a gripper to the arm's tool0 link, wire it up as a controller, and write a Python node that moves the arm through a complete pick-and-place sequence using hard-coded joint angles.
 
-> 💡 **Why hard-code joint angles instead of using IK?** Inverse kinematics (IK) computes joint angles from a desired end-effector position automatically — but it requires additional packages (like MoveIt 2) and significant setup. For now, you'll figure out the joint angles manually (using the Gazebo GUI or trial and error) and hard-code them directly. This is totally valid for a demo.
+> 💡 **Why hard-code joint angles instead of using IK?** Inverse kinematics (IK) computes joint angles from a desired end-effector position automatically — but it requires additional packages (like MoveIt 2) and significant setup. For now, joint angles are determined manually (using the Gazebo GUI or trial and error) and hard-coded directly. This is valid for a demo.
 
 ---
 
-#### 8.1 Add a Simple Gripper to the URDF
+#### Gripper Design Decision
 
-A gripper is a mechanical end-effector that opens and closes to grasp objects. You'll build a minimal two-finger gripper from scratch as URDF links and joints.
+**Option 1 (chosen): Custom two-finger gripper**
+Built from box primitives directly in URDF. No external dependencies, fully under our control. Physics interaction with a sphere is imperfect (flat fingers on a round apple can slip), but sufficient for a demo.
 
-- [ ] Open `urdf/ur3e_gz.urdf.xacro`
-- [ ] After the arm macro expansion, add the gripper links. A minimal gripper has:
-  - [ ] A **base link** (`gripper_base_link`) — the palm, attached to `tool0` with a fixed joint
-    - Geometry: a small flat box (~0.08 m wide × 0.04 m deep × 0.02 m tall)
-  - [ ] A **left finger** (`left_finger_link`) — attached to the base with a prismatic (sliding) joint
-    - Geometry: a thin box (~0.01 m × 0.02 m × 0.06 m tall)
-    - Joint axis: `x` (slides left/right along X)
-    - Joint limits: `lower="0.0"` (closed), `upper="0.04"` (open, 4 cm gap)
-  - [ ] A **right finger** (`right_finger_link`) — same as left, mirrored
-    - Joint axis: `x` with the opposite direction (so both fingers move symmetrically)
+**Option 2 (future upgrade): Robotiq 2F-85**
+The industry-standard gripper for UR arms. More realistic physics and appearance. To switch:
+1. Remove the `BEGIN CUSTOM GRIPPER` / `END CUSTOM GRIPPER` block in `urdf/ur3e_gz.urdf.xacro`
+2. Clone the Robotiq ROS 2 description package and include its xacro macro attached to `tool0`
+3. Replace the custom gripper joints in the `<ros2_control>` block with the Robotiq joint config
+4. Update `config/ros2_controllers.yaml` to use the Robotiq controller
+5. Update `pick_and_place.py` — Robotiq uses an action interface (`/robotiq_gripper_controller/gripper_cmd`) rather than a position topic
+
+The code is structured with comments marking every place that would need to change for this swap.
+
+---
+
+#### 8.1 Add the Gripper to the URDF ✅
+
+- [x] Open `urdf/ur3e_gz.urdf.xacro`
+- [x] Added `gripper_base_link` (palm: 12 cm × 6 cm × 4 cm) with a fixed joint to `tool0`
+- [x] Added `left_finger_link` — prismatic joint sliding along +X, limits −1 mm to 51 mm (0 = closed, 50 mm = open)
+- [x] Added `right_finger_link` — prismatic joint sliding along −X, mirrored
+- [x] Added `left_finger_joint` and `right_finger_joint` to the `<ros2_control>` block with position command/state interfaces
+- [x] Both joints given `<dynamics damping="0.5" friction="0.0"/>` for stable controller response
+- [x] All gripper code wrapped in `BEGIN CUSTOM GRIPPER` / `END CUSTOM GRIPPER` comment blocks for easy identification and future swap
 
   > 💡 **Fixed joint vs prismatic joint:**
-  > - `fixed`: the two links are rigidly connected — no movement
-  > - `prismatic`: one link slides along an axis relative to the other — this is how fingers open/close
+  > - `fixed`: two links are rigidly connected — no movement
+  > - `prismatic`: one link slides along an axis — this is how fingers open/close
   > - `revolute`: one link rotates around an axis — this is how arm joints work
 
-  > ⚠️ **Attach to `tool0`, not `wrist_3_link`.** `tool0` is the conventional tool attachment point at the very end of the arm. Always attach end-effectors here.
+  > ⚠️ **Don't forget the ros2_control block.** Just adding URDF links isn't enough — the finger joints must also be listed in the `<ros2_control>` block or the controller_manager won't know about them.
 
-  > ⚠️ **Finger collision geometry matters.** If the collision boxes are too large, the gripper will collide with the apple before the fingers actually touch it. Start small and adjust based on what you see in simulation.
-
-- [ ] Add the gripper joints to the `<ros2_control>` hardware block:
-  - [ ] Add both finger joints with `command_interfaces: [position]` and `state_interfaces: [position]`
-  - [ ] The joint names must exactly match what you named the prismatic joints in the URDF
-
-  > ⚠️ **Don't forget the ros2_control block.** Just adding URDF links isn't enough — the finger joints must also be listed in the `<ros2_control>` block so the controller_manager knows about them. Miss this step and you'll get "joint not found" errors.
-
-- [ ] Rebuild and relaunch
-- [ ] ✅ Check in Gazebo GUI: you can see the gripper attached to the end of the arm
-- [ ] ✅ Check: `ros2 control list_hardware_interfaces` shows `left_finger_joint/position` and `right_finger_joint/position`
+  > ⚠️ **Joint limits must have a 1 mm buffer from exact zero.** gz_ros2_control's `JointSaturationLimiter` fires a constant error stream when a joint rests exactly at a limit boundary (IEEE negative zero issue). Setting `lower="-0.001"` and `upper="0.051"` prevents this without affecting physical behavior.
 
 ---
 
-#### 8.2 Add a Gripper Controller
+#### 8.2 Wire the Gripper into the Controller ✅
 
-The gripper fingers need their own controller — separate from the arm's `joint_trajectory_controller`.
+Rather than adding a separate `JointGroupPositionController` for the gripper, the finger joints were added directly to the existing `joint_trajectory_controller`. This is more stable — `JointGroupPositionController` with `gz_ros2_control`'s default `position_proportional_gain=0.1` is too weak to reliably drive small prismatic joints, causing physics instability at joint limits.
 
-- [ ] Open `config/ros2_controllers.yaml`
-- [ ] Add a new controller entry:
-  ```yaml
-  gripper_controller:
-    type: position_controllers/JointGroupPositionController
-  ```
-- [ ] Add its configuration section:
-  ```yaml
-  gripper_controller:
-    ros__parameters:
-      joints:
-        - left_finger_joint
-        - right_finger_joint
-  ```
-- [ ] Open `launch/ur3e_gazebo.launch.py`
-- [ ] Add a third controller spawner node for `gripper_controller`, chained after the trajectory controller starts (same `RegisterEventHandler` pattern already used for the other two)
+- [x] Open `config/ros2_controllers.yaml`
+- [x] Added `left_finger_joint` and `right_finger_joint` to the `joints` list under `joint_trajectory_controller`
+- [x] Added `allow_partial_joints_goal: true` — allows sending a trajectory that specifies only the finger joints (leaving the arm at its current pose) or only the arm (leaving the gripper at its current pose)
+- [x] Updated `home_pose.py` to include both finger joints at `0.0` (closed) in the `HOME_POSE` dict
+- [x] No separate gripper spawner needed — launch chain is unchanged: spawn_robot → joint_state_broadcaster → joint_trajectory_controller → home_pose
 
-  > 💡 **Why `JointGroupPositionController`?** The arm uses `JointTrajectoryController` because it needs smooth trajectories with timing. The gripper just needs to go to a position (open or closed) — no smooth trajectory needed. `JointGroupPositionController` is simpler: you publish one float per joint and it goes there.
+  > 💡 **Why fold the gripper into the JTC?** The `JointTrajectoryController` is well-tested, respects joint limits cleanly, and already handles all 6 arm joints. `allow_partial_joints_goal: true` gives you the flexibility to command just the fingers or just the arm without needing separate controllers.
 
-  > 💡 **Gripper command topic:** Once running, the gripper controller listens on `/gripper_controller/commands`. You publish a `std_msgs/msg/Float64MultiArray` with two values: `[left_position, right_position]`. `[0.0, 0.0]` = fully closed, `[0.04, -0.04]` = fully open.
+  > 💡 **Gripper command topic:** The gripper now shares `/joint_trajectory_controller/joint_trajectory`. Send a `JointTrajectory` message with only the finger joints named — the controller holds the arm at its current position:
+  > ```bash
+  > # Open gripper
+  > ros2 topic pub --once /joint_trajectory_controller/joint_trajectory \
+  >   trajectory_msgs/msg/JointTrajectory '{
+  >     joint_names: [left_finger_joint, right_finger_joint],
+  >     points: [{positions: [0.05, 0.05], time_from_start: {sec: 2}}]
+  >   }'
+  > # Close gripper
+  > ros2 topic pub --once /joint_trajectory_controller/joint_trajectory \
+  >   trajectory_msgs/msg/JointTrajectory '{
+  >     joint_names: [left_finger_joint, right_finger_joint],
+  >     points: [{positions: [0.0, 0.0], time_from_start: {sec: 2}}]
+  >   }'
+  > ```
 
-- [ ] Rebuild and relaunch
-- [ ] ✅ Check: `ros2 control list_controllers` shows `gripper_controller` as active
-- [ ] ✅ Test open/close manually:
-  ```bash
-  # Open gripper
-  ros2 topic pub --once /gripper_controller/commands std_msgs/msg/Float64MultiArray \
-    "{data: [0.04, -0.04]}"
-  # Close gripper
-  ros2 topic pub --once /gripper_controller/commands std_msgs/msg/Float64MultiArray \
-    "{data: [0.0, 0.0]}"
-  ```
+- [x] Rebuild and relaunch
+- [x] ✅ `ros2 control list_controllers` shows `joint_trajectory_controller` active (gripper included)
+- [x] ✅ Gripper opens and closes reliably via topic commands
 
 ---
 
@@ -764,13 +761,13 @@ Before writing the pick node, you need to know the actual joint angles for each 
   - [ ] Execute the pick-and-place sequence step by step:
     1. **Move to home pose** — publish to `/joint_trajectory_controller/joint_trajectory`
     2. **Wait** for the motion to complete (use `time.sleep()` with generous margin)
-    3. **Open gripper** — publish to `/gripper_controller/commands`
+    3. **Open gripper** — publish `[left_finger_joint, right_finger_joint]` = `[0.05, 0.05]` to `/joint_trajectory_controller/joint_trajectory`
     4. **Move to approach pose**
     5. **Wait**
     6. **Move to grasp pose**
     7. **Wait**
-    8. **Close gripper** — publish the closed position
-    9. **Wait** (give the gripper time to close — ~1 second)
+    8. **Close gripper** — publish `[0.0, 0.0]` to `/joint_trajectory_controller/joint_trajectory`
+    9. **Wait** (give the gripper time to close — ~2 seconds)
     10. **Move to lift pose**
     11. **Wait**
     12. **Move to transport pose**
@@ -808,7 +805,7 @@ Before writing the pick node, you need to know the actual joint angles for each 
   ```bash
   ros2 launch ur3e_gazebo ur3e_gazebo.launch.py
   ```
-- [ ] Wait for all 3 controllers to report active (arm broadcaster, arm trajectory, gripper)
+- [ ] Wait for both controllers to report active: `joint_state_broadcaster` and `joint_trajectory_controller` (gripper is now part of the trajectory controller — no third controller needed)
 - [ ] Terminal 2 — Run the pick node:
   ```bash
   ros2 run ur3e_gazebo hard_coded_pick

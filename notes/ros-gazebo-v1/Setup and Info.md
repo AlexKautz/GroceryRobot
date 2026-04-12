@@ -105,11 +105,11 @@ ros2 launch ur3e_gazebo ur3e_gazebo.launch.py
 This will:
 1. Launch Gazebo with the grocery store world
 2. Start a clock bridge so ROS gets sim time from Gazebo
-3. Start a camera bridge so all camera topics appear in ROS 2
+3. Start a camera bridge so all 12 camera topics appear in ROS 2
 4. Spawn the UR3e robot
 5. Start the `joint_state_broadcaster` controller
-6. Start the `joint_trajectory_controller` controller
-7. Send the home pose command (arm moves to face the table)
+6. Start the `joint_trajectory_controller` controller (controls all 6 arm joints + 2 gripper finger joints)
+7. Send the home pose command (arm moves to face the table, gripper starts closed)
 
 > ⚠️ **You must click Play in Gazebo before the controllers activate.**
 > Gazebo opens in a paused state. While paused, the `/clock` topic does not tick — and the
@@ -193,8 +193,9 @@ The `Universal_Robots_ROS2_Description/` package next to it is third-party — w
 - **Line 3** — `update_rate: 100` sets the controller loop to run at 100 Hz. This must be slower than the physics step rate in `grocery_world.sdf` (1000 Hz), which it is.
 - **Lines 5–6** — Registers `joint_state_broadcaster` by type. This controller reads all joint states from the hardware and publishes them to `/joint_states`. It needs no further config.
 - **Lines 8–9** — Registers `joint_trajectory_controller` by type. This is the controller that actually accepts motion commands.
-- **Lines 13–19** — Lists all 6 UR3e joint names that the trajectory controller manages. These must exactly match the joint names in the URDF/xacro — a mismatch here causes a silent failure at activation.
+- **Lines 13–19** — Lists all 8 joints the trajectory controller manages: 6 UR3e arm joints + `left_finger_joint` + `right_finger_joint`. These must exactly match the joint names in the URDF/xacro — a mismatch here causes a silent failure at activation.
 - **Lines 20–23** — `command_interfaces: [position]` means we send position targets (not velocity or torque). `state_interfaces: [position, velocity]` means the controller reads back both position and velocity to track trajectory progress.
+- **`allow_partial_joints_goal: true`** — lets you send a trajectory that names only some joints (e.g., just the two finger joints to open/close the gripper, without specifying the arm). The controller holds unspecified joints at their current position.
 
 ---
 
@@ -241,17 +242,21 @@ GroceryRobot/
 │       │   ├── launch/
 │       │   │   └── ur3e_gazebo.launch.py       # Entry point — starts everything
 │       │   ├── urdf/
-│       │   │   └── ur3e_gz.urdf.xacro          # Robot description + control wiring + arm cameras
+│       │   │   └── ur3e_gz.urdf.xacro          # Robot description + control wiring + arm cameras + gripper
 │       │   ├── config/
-│       │   │   └── ros2_controllers.yaml       # Controller definitions and joint list
+│       │   │   └── ros2_controllers.yaml       # Controller definitions and joint list (8 joints)
 │       │   ├── worlds/
 │       │   │   └── grocery_world.sdf           # Gazebo world (ground, table, apple, shelf, overhead camera)
 │       │   ├── ur3e_gazebo/
-│       │   │   └── home_pose.py                # One-shot node: sends arm to home pose after launch
+│       │   │   ├── home_pose.py                # One-shot node: sends arm + gripper to home pose after launch
+│       │   │   ├── arm_camera_localizer.py     # Stub CV node: subscribes to arm camera topics, publishes apple location
+│       │   │   └── overhead_camera_localizer.py # Stub CV node: subscribes to overhead camera topics, publishes apple location
 │       │   ├── setup.py                        # Tells colcon what files to install
 │       │   └── package.xml                     # Package metadata and dependencies
 │       └── Universal_Robots_ROS2_Description/  # Third-party — clone separately, never edit
 └── notes/
     └── ros-gazebo-v1/
-        └── Setup and Info.md                   # This file
+        ├── Setup and Info.md                   # This file
+        ├── Gazebo.md                           # Phase-by-phase work log
+        └── Gripper Testing Guide.md            # Manual test commands for open/close
 ```

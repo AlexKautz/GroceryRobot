@@ -16,6 +16,8 @@ Home pose joint angles (radians):
   wrist_1_joint       : -1.57  (wrist level)
   wrist_2_joint       :  0.0
   wrist_3_joint       :  0.0
+  left_finger_joint   :  0.0   (gripper closed)
+  right_finger_joint  :  0.0   (gripper closed)
 """
 
 import rclpy
@@ -31,6 +33,8 @@ HOME_POSE = {
     'wrist_1_joint':       -1.57,
     'wrist_2_joint':        0.0,
     'wrist_3_joint':        0.0,
+    'left_finger_joint':    0.0,
+    'right_finger_joint':   0.0,
 }
 
 # Time allowed for the arm to reach home pose (seconds)
