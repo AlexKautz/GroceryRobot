@@ -33,6 +33,8 @@ setup(
             'home_pose = ur3e_gazebo.home_pose:main',
             'arm_camera_localizer = ur3e_gazebo.arm_camera_localizer:main',
             'overhead_camera_localizer = ur3e_gazebo.overhead_camera_localizer:main',
+            'pick_and_place = ur3e_gazebo.pick_and_place:main',
+            'joint_control_panel = ur3e_gazebo.joint_control_panel:main',
         ],
     },
 )

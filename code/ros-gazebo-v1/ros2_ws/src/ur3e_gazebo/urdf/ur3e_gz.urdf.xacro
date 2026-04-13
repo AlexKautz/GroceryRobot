@@ -265,7 +265,7 @@
     <!-- 0.0 = closed (gripping), 0.05 = fully open (5 cm per side = 10 cm total extra gap) -->
     <!-- 1 mm buffers keep the joint off exact limit boundaries, preventing
          gz_ros2_control's JointSaturationLimiter from firing on IEEE -0.0 or +0.0. -->
-    <limit lower="-0.001" upper="0.051" effort="20" velocity="1.0"/>
+    <limit lower="-0.03" upper="0.051" effort="20" velocity="1.0"/>
     <!-- Damping prevents instant snapping and allows the controller to
          smoothly hold and drive the joint in both directions. -->
     <dynamics damping="0.5" friction="0.0"/>
@@ -302,7 +302,7 @@
     <origin xyz="-0.05 0 0.04" rpy="0 0 0"/>
     <axis xyz="-1 0 0"/>
     <!-- Same 1 mm buffers as left_finger_joint — prevents -0.0 boundary errors. -->
-    <limit lower="-0.001" upper="0.051" effort="20" velocity="1.0"/>
+    <limit lower="-0.03" upper="0.051" effort="20" velocity="1.0"/>
     <dynamics damping="0.5" friction="0.0"/>
   </joint>
 
