@@ -1,24 +1,91 @@
 # GroceryRobot
-This project aims to develop a mobile manipulation system that autonomously navigates to a grocery pickup location, extracts items from an open container, and places them into designated storage bins (representing refrigerator).
 
-# How to use this repository:
-## Making changes:
-1. Create a branch
-    This can be done at https://github.com/AlexKautz/GroceryRobot/branches
-2. Make changes and commit them
-3. Create a pull request
-    This can be done at https://github.com/AlexKautz/GroceryRobot/pulls
-4. Review your changes
-    If your changes are large, you can ask others to review them
-5. Squash merge your pull request
+A simulated grocery-picking robot built on **ROS 2 Kilted** and **Gazebo Ionic**.
+A UR3e arm picks an item off a table and places it onto a shelf, fully autonomously.
 
-## Reading and editing notes
-Notes are stored in markdown, and can be read and edited by any tool.
-[Obsidian](https://obsidian.md/) is a good choice.
-You can open the root folder in it to get started.
+---
 
-# Repository layout:
-`code/` - all of our code.
-`notes/` - stores the majority of our notes. It is still best to open the repository at the root in tools like Obsidian so our notes can reference other files.
-`documents/` - stores our formal documents both in Latex and PDFs
+## Quick Start
 
+> Run in a **native terminal** — Gazebo's GUI has a known error in the VS Code integrated terminal.
+
+**First time on a new machine:**
+```bash
+source /opt/ros/kilted/setup.bash
+bash setup.sh
+```
+
+**Every time after that:**
+```bash
+source /opt/ros/kilted/setup.bash
+source code/ros-gazebo-v1/ros2_ws/install/setup.bash
+ros2 launch ur3e_gazebo ur3e_gazebo.launch.py
+```
+
+Click **Play** in Gazebo. The arm will move to its home pose facing the table.
+
+**To run the pick-and-place sequence** (in a second terminal, after clicking Play):
+```bash
+source /opt/ros/kilted/setup.bash
+source code/ros-gazebo-v1/ros2_ws/install/setup.bash
+ros2 run ur3e_gazebo pick_and_place
+```
+
+**To stop everything:**
+```bash
+bash teardown.sh
+```
+
+**For full setup, see [[Setup and Info]]**
+
+---
+
+## What the simulation does
+
+1. A UR3e arm spawns in a world containing a table, a red apple, and a shelf
+2. Arm cameras (wrist-mounted + overhead) stream RGB and depth images into ROS 2
+3. On launch, the arm moves to a home pose facing the table
+4. Running `pick_and_place` sequences the arm through a full pick-and-place:
+   opens the gripper → approaches the apple → grasps it → lifts → rotates to the shelf → places → returns home
+
+---
+
+## Repository layout
+
+```
+GroceryRobot/
+├── setup.sh                        # First-time setup on a new machine
+├── teardown.sh                     # Stop all running simulation processes
+├── code/
+│   └── ros-gazebo-v1/
+│       └── ros2_ws/src/
+│           └── ur3e_gazebo/        # Our ROS 2 package (all custom code lives here)
+├── notes/
+│   └── ros-gazebo-v1/
+│       ├── Setup and Info.md       # Full setup guide and key-files reference
+│       ├── Gripper Testing Guide.md
+│       └── Pick and Place Tuning Guide.md
+└── documents/                      # Formal write-ups (LaTeX + PDFs)
+```
+
+---
+
+## Team
+*Note: These roles are just general categories. Everybody works on everything.*
+
+| Person | Area |
+|--------|------|
+| Alex | Gazebo simulation |
+| Keven | ROS integration / manipulation |
+| Pascale | CV / object detection |
+
+---
+
+## Contributing
+
+1. Create a branch at https://github.com/AlexKautz/GroceryRobot/branches
+2. Make changes and commit
+3. Open a pull request at https://github.com/AlexKautz/GroceryRobot/pulls
+4. Squash merge when approved
+
+Notes are stored as Markdown. [Obsidian](https://obsidian.md/) works well — open the repo root folder to get started.

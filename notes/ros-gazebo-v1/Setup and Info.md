@@ -236,6 +236,8 @@ The `Universal_Robots_ROS2_Description/` package next to it is third-party — w
 
 ```
 GroceryRobot/
+├── setup.sh                                    # First-time setup on a new machine
+├── teardown.sh                                 # Stop all running simulation processes
 ├── code/ros-gazebo-v1/ros2_ws/
 │   └── src/
 │       ├── ur3e_gazebo/                        # Our package (tracked in git)
@@ -248,15 +250,17 @@ GroceryRobot/
 │       │   ├── worlds/
 │       │   │   └── grocery_world.sdf           # Gazebo world (ground, table, apple, shelf, overhead camera)
 │       │   ├── ur3e_gazebo/
-│       │   │   ├── home_pose.py                # One-shot node: sends arm + gripper to home pose after launch
-│       │   │   ├── arm_camera_localizer.py     # Stub CV node: subscribes to arm camera topics, publishes apple location
-│       │   │   └── overhead_camera_localizer.py # Stub CV node: subscribes to overhead camera topics, publishes apple location
+│       │   │   ├── home_pose.py                # One-shot node: moves arm + gripper to home pose after launch
+│       │   │   ├── pick_and_place.py           # Sequences the arm through a full pick-and-place autonomously
+│       │   │   ├── joint_control_panel.py      # GUI tool for manually positioning the arm and recording joint angles
+│       │   │   ├── arm_camera_localizer.py     # Stub CV node: arm wrist camera → apple location (ready for CV impl.)
+│       │   │   └── overhead_camera_localizer.py # Stub CV node: overhead camera → apple location (ready for CV impl.)
 │       │   ├── setup.py                        # Tells colcon what files to install
 │       │   └── package.xml                     # Package metadata and dependencies
 │       └── Universal_Robots_ROS2_Description/  # Third-party — clone separately, never edit
 └── notes/
     └── ros-gazebo-v1/
-        ├── Setup and Info.md                   # This file
-        ├── Gazebo.md                           # Phase-by-phase work log
-        └── Gripper Testing Guide.md            # Manual test commands for open/close
+        ├── Setup and Info.md                   # This file — full setup guide and key-files reference
+        ├── Pick and Place Tuning Guide.md      # Recorded joint positions and run instructions
+        └── Gripper Testing Guide.md            # Manual commands for testing gripper open/close
 ```
