@@ -105,6 +105,11 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped, Point
 from std_msgs.msg import Header
 from tf2_ros import Buffer, TransformListener
+from image_geometry import PinholeCameraModel
+
+from ultralytics import YOLO
+import cv2
+import tf2_geometry_msgs
 
 
 class ArmCameraLocalizer(Node):
@@ -118,6 +123,9 @@ class ArmCameraLocalizer(Node):
         # background — it does not need to be called directly.
         self._tf_buffer = Buffer()
         self._tf_listener = TransformListener(self._tf_buffer, self)
+        
+        # Initialize YOLO model
+        self.model = YOLO("yolov8n.pt")
 
         # --- Subscriptions ---
 
@@ -157,6 +165,8 @@ class ArmCameraLocalizer(Node):
 
         # Store the latest camera info so it is available during depth processing
         self._latest_camera_info = None
+        self._latest_centroid = None
+        self._depth = None
 
         self.get_logger().info('arm_camera_localizer started — waiting for camera topics...')
 
@@ -190,7 +200,7 @@ class ArmCameraLocalizer(Node):
             throttle_duration_sec=2.0,
         )
 
-        # TODO — Detection
+        #   Detection
         #   This is where the CV implementation begins. The `pixels` array
         #   above is a standard numpy image ready for processing.
         #
@@ -204,9 +214,23 @@ class ArmCameraLocalizer(Node):
         #     mask = cv2.inRange(hsv, (0, 100, 100), (10, 255, 255))
         #     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         #     # find the largest contour and compute its centroid
+        
+        # assumes there is one apple in frame
+        results = self.model.predict(pixels)
+        center_x, center_y = None, None
+        for result in results:
+            boxes = result.boxes
+            for box in boxes:
+                if self.model.names[int(box.cls)] == 'apple':
+                    x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
+                    center_x = int((x1 + x2) / 2)
+                    center_y = int((y1 + y2) / 2)
 
-        # --- Placeholder ---
-        self._publish_dummy_location(msg.header.stamp)
+        # store centroid if apple in frame
+        if center_x is not None and center_y is not None:
+            self._latest_centroid = np.array([center_y, center_x])
+        # calls self._projection with timestamp
+        self._projection(msg.header.stamp)
 
     # ------------------------------------------------------------------ #
     #  DEPTH IMAGE CALLBACK                                                #
@@ -237,12 +261,16 @@ class ArmCameraLocalizer(Node):
                 throttle_duration_sec=2.0,
             )
 
-        # TODO — Depth lookup
+        #  s Depth lookup
         #   Once a detection pixel (center_x, center_y) is available from
         #   the RGB callback, retrieve its depth here:
         #     depth_value = depth_pixels[center_y, center_x]
         #   Note the [y, x] indexing — rows come first in numpy arrays.
         #   Verify the value is finite before using it downstream.
+        if self._latest_centroid is not None:
+            depth_value = depth_pixels[self._latest_centroid]
+            if np.isfinite(depth_value):
+                self._depth = depth_value
 
     # ------------------------------------------------------------------ #
     #  CAMERA INFO CALLBACK                                                #
@@ -260,7 +288,15 @@ class ArmCameraLocalizer(Node):
         """
         self._latest_camera_info = msg
 
-        # TODO — Pixel-to-3D projection
+    def _projection(self, timestamp):
+
+        """
+        Pixel-to-3D projection
+        With a (center_x, center_y) and a depth_value, the intrinsics
+        here allow computing a 3D point in the camera coordinate frame.
+        """
+
+        #   Pixel-to-3D projection
         #   With a (center_x, center_y) and a depth_value, the intrinsics
         #   here allow computing a 3D point in the camera coordinate frame.
         #   image_geometry.PinholeCameraModel is a convenient abstraction:
@@ -273,6 +309,25 @@ class ArmCameraLocalizer(Node):
         #
         #   point_in_camera_frame is (x, y, z) in meters, expressed in the
         #   camera_link frame. It still needs to be transformed to world frame.
+
+        if self._latest_centroid is not None and self._depth is not None and self._latest_camera_info is not None:
+        
+            model = PinholeCameraModel()
+            model.fromCameraInfo(self._latest_camera_info)
+            center_x, center_y = self._latest_centroid[1], self._latest_centroid[0]
+            ray = model.projectPixelTo3dRay((center_x, center_y))
+            point_in_camera_frame = [r * self._depth for r in ray]
+            
+
+            transform = self._lookup_camera_to_world()
+
+            if transform is not None:
+                point_stamped = PointStamped()
+                point_stamped.header.frame_id = 'camera_link'
+                point_stamped.header.stamp = timestamp
+                point_stamped.point = Point(x=point_in_camera_frame[0], y=point_in_camera_frame[1], z=point_in_camera_frame[2])
+                world_point = tf2_geometry_msgs.do_transform_point(point_stamped, transform)
+                self._publish_world_frame(world_point)
 
     # ------------------------------------------------------------------ #
     #  TF2 TRANSFORM HELPER                                                #
@@ -311,24 +366,13 @@ class ArmCameraLocalizer(Node):
     #  PLACEHOLDER PUBLISHER                                               #
     # ------------------------------------------------------------------ #
 
-    def _publish_dummy_location(self, stamp):
+    def _publish_world_frame(self, world_point):
         """
-        Publishes a dummy (0, 0, 0) apple location so the output topic is
-        always active and downstream nodes do not block waiting for it.
+        Publishes the real world-frame PointStamped once the detection and transform 
+        pipeline above is complete.
+        """
 
-        TODO — Replace this with the real world-frame PointStamped once the
-        detection and transform pipeline above is complete, then remove this
-        method.
-        """
-        self.get_logger().warn(
-            'CV NOT IMPLEMENTED — publishing dummy apple location (0, 0, 0)',
-            throttle_duration_sec=5.0,
-        )
-        msg = PointStamped(
-            header=Header(frame_id='world', stamp=stamp),
-            point=Point(x=0.0, y=0.0, z=0.0),
-        )
-        self._apple_location_pub.publish(msg)
+        self._apple_location_pub.publish(world_point)
 
 
 def main(args=None):
