@@ -103,6 +103,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped, Point
+from visualization_msgs.msg import Marker
 from std_msgs.msg import Header
 from tf2_ros import Buffer, TransformListener
 from image_geometry import PinholeCameraModel
@@ -110,6 +111,7 @@ from image_geometry import PinholeCameraModel
 from ultralytics import YOLO
 import cv2
 import tf2_geometry_msgs
+from cv_bridge import CvBridge
 
 
 class ArmCameraLocalizer(Node):
@@ -126,6 +128,8 @@ class ArmCameraLocalizer(Node):
         
         # Initialize YOLO model
         self.model = YOLO("yolov8n.pt")
+
+        self.bridge = CvBridge()
 
         # --- Subscriptions ---
 
@@ -163,6 +167,21 @@ class ArmCameraLocalizer(Node):
             10,
         )
 
+        # Bounding box for apple
+        self._bounding_box_pub = self.create_publisher(
+            Image,
+            '/arm_camera/annotated_image',
+            10
+        )
+
+        # Marker 
+        self._apple_marker_pub = self.create_publisher(
+            Marker,
+            '/arm_camera/apple_marker',
+            10
+        )
+
+
         # Store the latest camera info so it is available during depth processing
         self._latest_camera_info = None
         self._latest_centroid = None
@@ -190,7 +209,7 @@ class ArmCameraLocalizer(Node):
         # The three channels are R, G, B in that order.
         pixels = np.frombuffer(msg.data, dtype=np.uint8).reshape(
             msg.height, msg.width, 3
-        )
+        ).copy()
         mean_r = float(np.mean(pixels[:, :, 0]))
         mean_g = float(np.mean(pixels[:, :, 1]))
         mean_b = float(np.mean(pixels[:, :, 2]))
@@ -215,6 +234,8 @@ class ArmCameraLocalizer(Node):
         #     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         #     # find the largest contour and compute its centroid
         
+        
+
         # assumes there is one apple in frame
         results = self.model.predict(pixels)
         center_x, center_y = None, None
@@ -225,10 +246,15 @@ class ArmCameraLocalizer(Node):
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
                     center_x = int((x1 + x2) / 2)
                     center_y = int((y1 + y2) / 2)
-
+                    cv2.rectangle(pixels, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+        
         # store centroid if apple in frame
         if center_x is not None and center_y is not None:
             self._latest_centroid = np.array([center_y, center_x])
+            
+        # convert pixels to cv2 image
+        cv_img = self.bridge.cv2_to_imgmsg(pixels, 'rgb8')
+        self._bounding_box_pub.publish(cv_img)
         # calls self._projection with timestamp
         self._projection(msg.header.stamp)
 
@@ -373,6 +399,21 @@ class ArmCameraLocalizer(Node):
         """
 
         self._apple_location_pub.publish(world_point)
+
+        marker = Marker()
+        marker.header.frame_id('world')
+        marker.ns = 'apple_detection'
+        marker.id = 0
+        marker.action = Marker.ADD
+        marker.type = Marker.SPHERE
+        marker.scale.x = 0.1
+        marker.color.a = 1.0 # Alpha
+        marker.color.r = 1.0 # Color
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        #marker.location=Duration(sec=0)
+
+        self._apple_marker_pub(marker)
 
 
 def main(args=None):

@@ -113,6 +113,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped, Point
+from visualization_msgs.msg import Marker
 from std_msgs.msg import Header
 from tf2_ros import Buffer, TransformListener
 from image_geometry import PinholeCameraModel
@@ -120,6 +121,7 @@ from image_geometry import PinholeCameraModel
 from ultralytics import YOLO
 import cv2
 import tf2_geometry_msgs
+from cv_bridge import CvBridge
 
 
 class OverheadCameraLocalizer(Node):
@@ -173,6 +175,20 @@ class OverheadCameraLocalizer(Node):
             PointStamped,
             '/overhead_camera/apple_location',
             10,
+        )
+
+        # Bounding box for apple
+        self._bounding_box_pub = self.create_publisher(
+            Image,
+            '/overhead_camera/annotated_image',
+            10
+        )
+
+        # Marker 
+        self._apple_marker_pub = self.create_publisher(
+            Marker,
+            '/overhead_camera/apple_marker',
+            10
         )
 
         # Store the latest camera info so it is available during depth processing
@@ -240,10 +256,16 @@ class OverheadCameraLocalizer(Node):
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
                     center_x = int((x1 + x2) / 2)
                     center_y = int((y1 + y2) / 2)
+                    cv2.rectangle(pixels, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+        
 
         # store centroid if apple in frame
         if center_x is not None and center_y is not None:
             self._latest_centroid = np.array([center_y, center_x])
+
+        # convert pixels to cv2 image
+        cv_img = self.bridge.cv2_to_imgmsg(pixels, 'rgb8')
+        self._bounding_box_pub.publish(cv_img)
         # calls self._projection with timestamp
         self._projection(msg.header.stamp)
 
@@ -393,6 +415,22 @@ class OverheadCameraLocalizer(Node):
         """
       
         self._apple_location_pub.publish(world_point)
+
+        marker = Marker()
+        marker.header.frame_id('world')
+        marker.ns = 'apple_detection'
+        marker.id = 0
+        marker.action = Marker.ADD
+        marker.type = Marker.SPHERE
+        marker.scale.x = 0.1
+        marker.color.a = 1.0 # Alpha
+        marker.color.r = 1.0 # Color
+        marker.color.g = 0.0
+        marker.color.b = 0.0
+        #marker.location=Duration(sec=0)
+
+        self._apple_marker_pub(marker)
+
 
 
 def main(args=None):
