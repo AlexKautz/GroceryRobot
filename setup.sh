@@ -52,7 +52,7 @@ echo ""
 echo "[2/5] Checking required system packages..."
 
 REQUIRED_PACKAGES=(
-    "gz-harmonic"
+    "ros-kilted-gz-sim-vendor"
     "ros-kilted-ros-gz"
     "ros-kilted-gz-ros2-control"
     "ros-kilted-ros2-controllers"
