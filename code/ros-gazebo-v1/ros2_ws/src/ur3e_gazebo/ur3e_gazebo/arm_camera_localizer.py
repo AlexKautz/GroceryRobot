@@ -401,12 +401,14 @@ class ArmCameraLocalizer(Node):
         self._apple_location_pub.publish(world_point)
 
         marker = Marker()
-        marker.header.frame_id('world')
+        marker.header.frame_id = 'world'
         marker.ns = 'apple_detection'
         marker.id = 0
         marker.action = Marker.ADD
         marker.type = Marker.SPHERE
         marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
         marker.color.a = 1.0 # Alpha
         marker.color.r = 1.0 # Color
         marker.color.g = 0.0
