@@ -133,6 +133,19 @@ def generate_launch_description():
         )
     )
 
+    # Overhead camera localizer node
+    overhead_camera_localizer = Node(
+        package='ur3e_gazebo',
+        executable='overhead_camera_localizer',
+    )
+
+    # Overhead camera localizer node
+    arm_camera_localizer = Node(
+        package='ur3e_gazebo',
+        executable='arm_camera_localizer',
+    )
+
+
     return LaunchDescription([
         gazebo,
         clock_bridge,
@@ -142,4 +155,6 @@ def generate_launch_description():
         load_joint_state_broadcaster,
         load_joint_trajectory_controller,
         load_home_pose,
+        overhead_camera_localizer,
+        arm_camera_localizer
     ])
