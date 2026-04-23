@@ -186,6 +186,7 @@ class ArmCameraLocalizer(Node):
         self._latest_camera_info = None
         self._latest_centroid = None
         self._depth = None
+        self.bridge = CvBridge()
 
         self.get_logger().info('arm_camera_localizer started — waiting for camera topics...')
 

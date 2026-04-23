@@ -196,6 +196,7 @@ class OverheadCameraLocalizer(Node):
         self._latest_centroid = None
         self._depth = None
         self._cached_transform = None
+        self.bridge = CvBridge()
 
 
         self.get_logger().info('overhead_camera_localizer started — waiting for camera topics...')
@@ -431,7 +432,7 @@ class OverheadCameraLocalizer(Node):
         marker.color.b = 0.0
         #marker.location=Duration(sec=0)
 
-        self._apple_marker_pub(marker)
+        self._apple_marker_pub.publish(marker)
 
 
 
