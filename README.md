@@ -42,11 +42,11 @@ bash teardown.sh
 
 ## What the simulation does
 
-1. A UR3e arm spawns in a world containing a table, a red apple, and a shelf
+1. A UR3e arm spawns in a world containing a table, an orange, and a shelf
 2. Arm cameras (wrist-mounted + overhead) stream RGB and depth images into ROS 2
 3. On launch, the arm moves to a home pose facing the table
 4. Running `pick_and_place` sequences the arm through a full pick-and-place:
-   opens the gripper → approaches the apple → grasps it → lifts → rotates to the shelf → places → returns home
+   opens the gripper → approaches the orange → grasps it → lifts → rotates to the shelf → places → returns home
 
 ---
 
@@ -78,6 +78,14 @@ GroceryRobot/
 | Alex | Gazebo simulation |
 | Keven | ROS integration / manipulation |
 | Pascale | CV / object detection |
+
+---
+
+## Third-party assets
+
+| Asset | Author | Source |
+|-------|--------|--------|
+| Orange 3D model (`models/orange/meshes/`) | Adwait Naik | [Gambit/Orange on Gazebo Fuel](https://app.gazebosim.org/Gambit/fuel/models/Orange) |
 
 ---
 

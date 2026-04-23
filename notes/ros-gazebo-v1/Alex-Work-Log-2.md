@@ -4,7 +4,7 @@
 # Work Sesion Apr 23rd
 The goal of this work sesion is to do the folowing 2 things:
 1. Add a realistic Apple model to the scene in place of the sphere. (We can find one online).
-2. Somehow see what the cameras see, such as saving their view to a file or better yet seeing it live.
+2. Test the Pickup and Place hardcoded automation and fix it if needed.
 
 
 ## Claud Work Tasks (Claud Code via VSCode)
@@ -93,7 +93,7 @@ The goal of this work sesion is to do the folowing 2 things:
 
 #### Step 7 — Commit
 
-- [ ] Stage and commit:
+- [X] Stage and commit:
   ```bash
   git add code/ros-gazebo-v1/ros2_ws/src/ur3e_gazebo/models/
   git add code/ros-gazebo-v1/ros2_ws/src/ur3e_gazebo/worlds/grocery_world.sdf
@@ -103,3 +103,101 @@ The goal of this work sesion is to do the folowing 2 things:
   git add code/ros-gazebo-v1/ros2_ws/src/ur3e_gazebo/ur3e_gazebo/
   git commit -m "Replace sphere apple with realistic orange mesh model, rename apple→orange everywhere"
   ```
+
+---
+
+### Task 2: Test the Pick-and-Place Automation and Fix It If Needed ✅ COMPLETE
+
+**Outcome:** Sequence runs successfully end-to-end. The root problem was that the simulation runs at ~18% real-time speed on this machine, so the original wall-clock timing caused the node to advance to the next step before the arm had physically arrived. Fixed by switching the node to ROS simulation time.
+
+**Fix applied — `pick_and_place.py`:**
+- Added `use_sim_time=True` to the node so all timing uses `/clock` (simulation time, not wall clock)
+- Replaced `time.monotonic()` with `self.get_clock().now()` for step advancement
+- Changed `MOVE_DURATION_SEC = 2.0` and `HOLD_SEC = 0.0` (tuned for this machine; sim time, not wall clock)
+- No rebuild required — Python changes take effect immediately on next `ros2 run`
+
+**Key insight:** `MOVE_DURATION_SEC` and `HOLD_SEC` are now in **simulation seconds**, not wall-clock seconds. At 18% sim speed, 2 sim-seconds = ~11 wall-clock seconds. The node will automatically adapt to any machine's sim speed.
+
+**The node:** `ur3e_gazebo/pick_and_place.py`
+All tuning lives in that one file — no other files need to be changed.
+
+**Key constants:**
+| Constant | Location in file | What it controls |
+|---|---|---|
+| `MOVE_DURATION_SEC = 2.0` | top of file | Sim-seconds given to the arm to reach each pose |
+| `HOLD_SEC = 0.0` | top of file | Sim-seconds to wait after arriving before the next step |
+| `_GRIP = -0.006` | top of file | How tightly the gripper closes (meters, negative = inward) |
+| `_HOME`, `_APPROACH`, `_GRASP`, `_LIFT`, `_TRANSPORT`, `_PLACE`, `_RETRACT` | pose dicts | Joint angles (radians) for each stage |
+
+---
+
+#### Step 1 — Set Up Two Terminals ✅
+
+You need the sim running in one terminal and the pick node in another.
+
+- [x] **Terminal 1** — start a fresh simulation:
+  ```bash
+  bash teardown.sh     # clear any stale processes first
+  source /opt/ros/kilted/setup.bash
+  source code/ros-gazebo-v1/ros2_ws/install/setup.bash
+  ros2 launch ur3e_gazebo ur3e_gazebo.launch.py
+  ```
+- [x] Click **Play** in Gazebo
+- [x] Wait until you see in the terminal:
+  ```
+  Configured and activated joint_trajectory_controller
+  Home pose command sent — arm will reach pose in 3s.
+  ```
+  The arm should move to the home pose facing the table.
+
+- [x] **Terminal 2** — source the workspace (same two source commands as above)
+
+---
+
+#### Step 2 — Run the Sequence ✅
+
+- [x] In Terminal 2:
+  ```bash
+  ros2 run ur3e_gazebo pick_and_place
+  ```
+- [x] Sequence ran successfully end-to-end and printed `Sequence complete.`
+
+---
+
+#### Step 3 — Watch Each Stage and Record What Happens ✅
+
+All 10 stages passed after switching to sim time.
+
+- [x] **Stage 1 — open_gripper** ✅
+- [x] **Stage 2 — approach** ✅
+- [x] **Stage 3 — grasp_position** ✅
+- [x] **Stage 4 — close_gripper** ✅
+- [x] **Stage 5 — lift** ✅
+- [x] **Stage 6 — transport** ✅
+- [x] **Stage 7 — place** ✅
+- [x] **Stage 8 — open_gripper** ✅
+- [x] **Stage 9 — retract** ✅
+- [x] **Stage 10 — home** ✅
+
+#### Step 4 — Record Final Results ✅
+
+- [x] ✅ Full sequence runs without arm collisions
+- [x] ✅ Orange lifts off the table
+- [x] ✅ Orange lands on the shelf
+- [x] ✅ Arm returns home cleanly
+
+```
+Final tuned values:
+MOVE_DURATION_SEC = 2.0   (sim seconds — auto-adapts to any machine speed)
+HOLD_SEC          = 0.0
+
+_APPROACH: pan=-0.385  lift=-1.232  elbow=1.352
+_GRASP:    pan=-0.385  lift=-1.232  elbow=1.706
+_LIFT:     pan=-0.385  lift=-2.226  elbow=1.425
+_TRANSPORT: pan=-3.283  lift=-2.120  elbow=1.425
+_PLACE:    pan=-3.283  lift=-1.754  elbow=1.425
+_RETRACT:  pan=-3.283  lift=-2.371  elbow=1.425
+_GRIP = -0.006
+```
+
+- [X] Commit:

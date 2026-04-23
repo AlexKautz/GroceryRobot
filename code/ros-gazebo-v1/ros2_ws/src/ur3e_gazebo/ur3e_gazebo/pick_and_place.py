@@ -49,6 +49,7 @@ WORLD GEOMETRY (for reference while tuning)
 """
 
 import rclpy
+import rclpy.parameter
 from rclpy.node import Node
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from builtin_interfaces.msg import Duration
@@ -58,8 +59,8 @@ from builtin_interfaces.msg import Duration
 #  TIMING  — edit these to adjust the speed of the sequence
 # ═══════════════════════════════════════════════════════════════════════════════
 
-MOVE_DURATION_SEC = 4.0   # seconds given to the arm to reach each pose
-HOLD_SEC          = 2.0   # seconds to wait after arriving before the next step
+MOVE_DURATION_SEC = 2.0   # seconds given to the arm to reach each pose
+HOLD_SEC          = 0.0   # seconds to wait after arriving before the next step
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -183,6 +184,15 @@ class PickAndPlaceNode(Node):
     def __init__(self):
         super().__init__('pick_and_place')
 
+        # Step timing uses /clock (simulation time) so the sequence works at any sim speed
+        self.set_parameters([
+            rclpy.parameter.Parameter(
+                'use_sim_time',
+                rclpy.parameter.Parameter.Type.BOOL,
+                True,
+            )
+        ])
+
         self._pub = self.create_publisher(
             JointTrajectory,
             '/joint_trajectory_controller/joint_trajectory',
@@ -202,9 +212,7 @@ class PickAndPlaceNode(Node):
     # ------------------------------------------------------------------ #
 
     def _tick(self):
-        import time
-
-        now = time.monotonic()
+        now = self.get_clock().now()
 
         if self._step >= len(SEQUENCE):
             self.get_logger().info('Sequence complete.')
@@ -221,7 +229,7 @@ class PickAndPlaceNode(Node):
                 f'[{self._step + 1}/{len(SEQUENCE)}] {name} '
                 f'(move {move_dur}s + hold {hold_sec}s)'
             )
-        elif now - self._step_start >= total_step_sec:
+        elif (now - self._step_start).nanoseconds / 1e9 >= total_step_sec:
             # Step complete — advance
             self._step += 1
             self._step_start = None
