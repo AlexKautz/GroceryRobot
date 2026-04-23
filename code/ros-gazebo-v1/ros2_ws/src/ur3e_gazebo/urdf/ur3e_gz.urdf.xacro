@@ -137,8 +137,16 @@
     <origin xyz="0 0.04 0.06" rpy="0 0.3 0"/>
   </joint>
 
+  <!-- Dedicated optical link for RGB sensor -->
+  <link name="camera_rgb_optical_link"/>
+  <joint name="camera_rgb_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_rgb_optical_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
   <!-- RGB camera sensor -->
-  <gazebo reference="camera_link">
+  <gazebo reference="camera_rgb_optical_link">
     <sensor name="arm_rgb_camera" type="camera">
       <always_on>1</always_on>
       <update_rate>30</update_rate>
