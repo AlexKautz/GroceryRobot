@@ -6,11 +6,34 @@ from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import PathJoinSubstitution, Command
+from ament_index_python.packages import get_package_share_directory
+import os
+import tempfile
 
 
 def generate_launch_description():
 
-    # Find our package
+    # Find our package share directory as a plain string so we can do
+    # string substitution on the world SDF before Gazebo sees it.
+    # Gazebo Ionic's SDF parser cannot resolve package:// URIs in world
+    # files — we replace them with absolute file:// paths at launch time.
+    pkg_share = get_package_share_directory('ur3e_gazebo')
+
+    world_template = os.path.join(pkg_share, 'worlds', 'grocery_world.sdf')
+    with open(world_template, 'r') as f:
+        world_content = f.read()
+    world_content = world_content.replace(
+        'package://ur3e_gazebo/',
+        'file://' + pkg_share + '/',
+    )
+    tmp_world = tempfile.NamedTemporaryFile(
+        mode='w', suffix='.sdf', delete=False, prefix='grocery_world_resolved_'
+    )
+    tmp_world.write(world_content)
+    resolved_world_path = tmp_world.name
+    tmp_world.close()
+
+    # Find our package (substitution form, used for xacro path below)
     ur3e_gazebo_pkg = FindPackageShare('ur3e_gazebo')
 
     # Generate the URDF from our wrapper xacro (which lives in ur3e_gazebo, not the upstream package).
@@ -23,7 +46,7 @@ def generate_launch_description():
         value_type=str,
     )
 
-    # Start Gazebo with our world
+    # Start Gazebo with the resolved world file (package:// URIs already substituted)
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
@@ -32,9 +55,7 @@ def generate_launch_description():
                 'gz_sim.launch.py'
             ])
         ]),
-        launch_arguments={'gz_args': PathJoinSubstitution([
-            FindPackageShare('ur3e_gazebo'), 'worlds', 'grocery_world.sdf'
-        ])}.items(),
+        launch_arguments={'gz_args': resolved_world_path}.items(),
     )
 
     # Bridge 1: /clock only — critical for controller_manager sim time

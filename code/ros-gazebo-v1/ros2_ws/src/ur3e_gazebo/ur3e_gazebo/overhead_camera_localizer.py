@@ -6,7 +6,7 @@ Stub node for the fixed overhead camera.
 PURPOSE
 -------
 This node subscribes to the overhead camera feeds mounted above the table
-and publishes the estimated 3D location of the apple in world coordinates.
+and publishes the estimated 3D location of the orange in world coordinates.
 
 The computer vision logic is intentionally left unimplemented — the ROS 2
 plumbing, topic wiring, and tf2 transform setup are all in place. The sections
@@ -36,8 +36,8 @@ SUBSCRIBED TOPICS
 
 PUBLISHED TOPICS
 ----------------
-  /overhead_camera/apple_location     (geometry_msgs/msg/PointStamped)
-      The estimated 3D position of the apple in the WORLD coordinate frame.
+  /overhead_camera/orange_location     (geometry_msgs/msg/PointStamped)
+      The estimated 3D position of the orange in the WORLD coordinate frame.
       A PointStamped contains:
           header.frame_id — the coordinate frame ("world")
           header.stamp    — the time this estimate was made
@@ -71,10 +71,10 @@ The transform from overhead_camera_link to world can be retrieved with:
 SUGGESTED CV PIPELINE
 ----------------------
 The following is a general outline of how to go from a camera frame to a
-published apple location. This is not prescriptive — adapt it to whichever
+published orange location. This is not prescriptive — adapt it to whichever
 detection approach makes sense for the project.
 
-  1. Detect the apple in the RGB image
+  1. Detect the orange in the RGB image
      An overhead view is well suited to color-based segmentation — looking
      for a red circular region against the brown table surface. The useful
      output is a pixel coordinate: (center_x, center_y) within the 640x480
@@ -84,7 +84,7 @@ detection approach makes sense for the project.
      Index into the depth image at (center_y, center_x) — note that image
      arrays are indexed [row, col] which corresponds to [y, x]. Since the
      camera points straight down, this depth value is approximately the
-     height of the apple above the ground.
+     height of the orange above the ground.
 
   3. Convert pixel + depth to a 3D point in camera frame
      Use the camera intrinsics from /overhead_depth_camera/camera_info.
@@ -101,11 +101,11 @@ detection approach makes sense for the project.
 
 NOTE ON OVERHEAD VS ARM CAMERA
 -------------------------------
-Both this node and arm_camera_localizer publish an apple location estimate.
+Both this node and arm_camera_localizer publish an orange location estimate.
 They are independent — either can be used, or both can be fused together
 for a more robust result. The overhead camera tends to give better X/Y
 accuracy; the arm camera can give better Z accuracy when the arm is close
-to the apple.
+to the orange.
 """
 
 import numpy as np
@@ -169,15 +169,15 @@ class OverheadCameraLocalizer(Node):
 
         # --- Publisher ---
 
-        # The estimated apple location in world coordinates.
+        # The estimated orange location in world coordinates.
         # The manipulation node consumes this topic to plan the pick motion.
-        self._apple_location_pub = self.create_publisher(
+        self._orange_location_pub = self.create_publisher(
             PointStamped,
-            '/overhead_camera/apple_location',
+            '/overhead_camera/orange_location',
             10,
         )
 
-        # Bounding box for apple
+        # Bounding box for orange
         self._bounding_box_pub = self.create_publisher(
             Image,
             '/overhead_camera/annotated_image',
@@ -185,9 +185,9 @@ class OverheadCameraLocalizer(Node):
         )
 
         # Marker 
-        self._apple_marker_pub = self.create_publisher(
+        self._orange_marker_pub = self.create_publisher(
             Marker,
-            '/overhead_camera/apple_marker',
+            '/overhead_camera/orange_marker',
             10
         )
 
@@ -215,7 +215,7 @@ class OverheadCameraLocalizer(Node):
         msg.header    — contains frame_id ('overhead_camera_link') and timestamp
 
         The overhead view looks straight down at the table. The table surface
-        appears as a brown rectangle; the apple appears as a red circle.
+        appears as a brown rectangle; the orange appears as a red circle.
         X in the image corresponds roughly to world Y, and Y in the image
         corresponds roughly to world X — verify this in the Gazebo GUI.
         """
@@ -240,26 +240,26 @@ class OverheadCameraLocalizer(Node):
         #   above is a standard numpy image ready for processing.
         #
         #   The goal is to produce (center_x, center_y) in pixel coordinates.
-        #   An overhead view of a red apple on a brown table is a good candidate
+        #   An overhead view of a red orange on a brown table is a good candidate
         #   for simple color segmentation before investing in a heavier approach.
         #
         #   If nothing is detected, consider returning early rather than
         #   publishing a misleading location.
 
-        # assumes there is one apple in frame
+        # assumes there is one orange in frame
         results = self.model.predict(pixels)
         center_x, center_y = None, None
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                if self.model.names[int(box.cls)] == 'apple':
+                if self.model.names[int(box.cls)] == 'orange':
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
                     center_x = int((x1 + x2) / 2)
                     center_y = int((y1 + y2) / 2)
                     cv2.rectangle(pixels, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
         
 
-        # store centroid if apple in frame
+        # store centroid if orange in frame
         if center_x is not None and center_y is not None:
             self._latest_centroid = np.array([center_y, center_x])
 
@@ -285,7 +285,7 @@ class OverheadCameraLocalizer(Node):
 
         Since the camera points straight down from a fixed height of 1.2 m,
         the table surface will appear at approximately 1.2 m depth. Objects
-        sitting on the table (like the apple) will appear at a smaller depth
+        sitting on the table (like the orange) will appear at a smaller depth
         value — roughly 1.2 m minus the object's height.
         """
 
@@ -414,11 +414,11 @@ class OverheadCameraLocalizer(Node):
         pipeline above is complete.
         """
       
-        self._apple_location_pub.publish(world_point)
+        self._orange_location_pub.publish(world_point)
 
         marker = Marker()
         marker.header.frame_id = 'world'
-        marker.ns = 'apple_detection'
+        marker.ns = 'orange_detection'
         marker.id = 0
         marker.action = Marker.ADD
         marker.type = Marker.SPHERE
@@ -431,7 +431,7 @@ class OverheadCameraLocalizer(Node):
         marker.color.b = 0.0
         #marker.location=Duration(sec=0)
 
-        self._apple_marker_pub(marker)
+        self._orange_marker_pub(marker)
 
 
 

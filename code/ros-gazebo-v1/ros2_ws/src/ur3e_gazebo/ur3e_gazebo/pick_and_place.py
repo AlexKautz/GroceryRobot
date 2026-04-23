@@ -4,12 +4,12 @@ pick_and_place.py
 Sequences the UR3e arm through a full pick-and-place motion:
 
   1. Open gripper        (at home pose)
-  2. Move to approach    (above the apple, gripper open)
-  3. Move to grasp       (gripper fingers around the apple, still open)
-  4. Close gripper       (grip the apple)
-  5. Lift                (raise apple off the table)
+  2. Move to approach    (above the orange, gripper open)
+  3. Move to grasp       (gripper fingers around the orange, still open)
+  4. Close gripper       (grip the orange)
+  5. Lift                (raise orange off the table)
   6. Transport           (rotate arm to face the shelf)
-  7. Place               (lower apple onto the shelf board)
+  7. Place               (lower orange onto the shelf board)
   8. Open gripper        (release)
   9. Return to home
 
@@ -41,7 +41,7 @@ Match each value to the correct joint name when copying.
 
 WORLD GEOMETRY (for reference while tuning)
 -------------------------------------------
-  Apple center:       world (0.35, 0.0, 0.065)   — on the table surface
+  Orange center:      world (0.35, 0.0, 0.065)   — on the table surface
   Table surface:      world z ≈ 0.025            — top face of the table box
   Shelf bottom board: world (≈-0.40, 0.0, 0.015) — bottom shelf near floor
   Shelf middle board: world (≈-0.40, 0.0, 0.300) — middle shelf at 30 cm
@@ -78,8 +78,8 @@ _HOME = {
     'wrist_3_joint':        0.000,
 }
 
-# Step 2 — arm swung to a position just short of being above the apple,
-# gripper already open so it clears the apple on the way down.
+# Step 2 — arm swung to a position just short of being above the orange,
+# gripper already open so it clears the orange on the way down.
 _APPROACH = {
     'shoulder_pan_joint':  -0.385,
     'shoulder_lift_joint': -1.232,
@@ -89,7 +89,7 @@ _APPROACH = {
     'wrist_3_joint':        0.000,
 }
 
-# Step 3 — arm lowered so the open gripper is positioned around the apple.
+# Step 3 — arm lowered so the open gripper is positioned around the orange.
 _GRASP = {
     'shoulder_pan_joint':  -0.385,
     'shoulder_lift_joint': -1.232,
@@ -99,7 +99,7 @@ _GRASP = {
     'wrist_3_joint':        0.000,
 }
 
-# Step 5 — arm raised with apple gripped, high enough to clear the table
+# Step 5 — arm raised with orange gripped, high enough to clear the table
 # and rotate to the shelf without collision.
 _LIFT = {
     'shoulder_pan_joint':  -0.385,
@@ -120,7 +120,7 @@ _TRANSPORT = {
     'wrist_3_joint':        0.000,
 }
 
-# Step 7 — arm lowered to deposit the apple on the shelf board.
+# Step 7 — arm lowered to deposit the orange on the shelf board.
 _PLACE = {
     'shoulder_pan_joint':  -3.283,
     'shoulder_lift_joint': -1.754,
@@ -153,7 +153,7 @@ _RETRACT = {
 # ═══════════════════════════════════════════════════════════════════════════════
 
 _OPEN  =  0.05    # gripper fully open
-_GRIP  = -0.006   # gripper squeezing apple (tuned value)
+_GRIP  = -0.006   # gripper squeezing orange (tuned value)
 _NEUTRAL = 0.0    # gripper at rest / home
 
 _M = MOVE_DURATION_SEC

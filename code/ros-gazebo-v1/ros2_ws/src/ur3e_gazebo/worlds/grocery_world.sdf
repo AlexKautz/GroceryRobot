@@ -113,10 +113,10 @@
         </visual>
       </link>
     </model>
-    <model name="apple">
+    <model name="orange">
       <static>false</static>
       <pose>0.35 0 0.065 0 0 0</pose>
-      <link name="apple_link">
+      <link name="orange_link">
         <collision name="collision">
           <geometry>
             <sphere>
@@ -125,15 +125,13 @@
           </geometry>
         </collision>
         <visual name="visual">
+          <pose>0.007 -0.035 -0.018 -1.5708 0 0</pose>
           <geometry>
-            <sphere>
-              <radius>0.04</radius>
-            </sphere>
+            <mesh>
+              <uri>package://ur3e_gazebo/models/orange/meshes/textured.dae</uri>
+              <scale>1 1 1</scale>
+            </mesh>
           </geometry>
-          <material>
-            <ambient>0.8 0.1 0.1 1</ambient>
-            <diffuse>0.8 0.1 0.1 1</diffuse>
-          </material>
         </visual>
         <inertial>
           <mass>0.15</mass>
@@ -249,7 +247,7 @@
          down. Gives a bird's-eye view of the full table surface —
          useful for CV to detect and locate objects before the arm moves.
 
-         Position: x=0.35 (centered over the apple/table area), z=1.2 m
+         Position: x=0.35 (centered over the orange/table area), z=1.2 m
          Orientation: rotated 90° around X so the sensor points down (-Z)
 
          TO MOVE: change x/y in the <pose> to shift the camera's footprint.

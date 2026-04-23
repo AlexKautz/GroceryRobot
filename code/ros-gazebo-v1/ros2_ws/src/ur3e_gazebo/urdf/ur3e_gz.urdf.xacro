@@ -228,8 +228,8 @@
 
   <!-- Left finger — slides in +X direction to open.
        Joint origin is at the end of the palm (Z=0.04) and 5 cm to the left (+X).
-       When closed (joint=0):   inner face is at ~4.25 cm from center — grips apple (r=4 cm).
-       When open  (joint=0.05): inner face is at ~9.25 cm from center — clears apple easily. -->
+       When closed (joint=0):   inner face is at ~4.25 cm from center — grips orange (r=4 cm).
+       When open  (joint=0.05): inner face is at ~9.25 cm from center — clears orange easily. -->
   <link name="left_finger_link">
     <visual>
       <!-- Center the visual at the midpoint of the finger length (5 cm) -->

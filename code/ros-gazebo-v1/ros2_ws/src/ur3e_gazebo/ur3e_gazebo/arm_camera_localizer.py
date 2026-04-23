@@ -6,7 +6,7 @@ Stub node for the arm-mounted wrist camera.
 PURPOSE
 -------
 This node subscribes to the UR3e arm's wrist camera feeds and publishes the
-estimated 3D location of the apple in world coordinates.
+estimated 3D location of the orange in world coordinates.
 
 The computer vision logic is intentionally left unimplemented — the ROS 2
 plumbing, topic wiring, and tf2 transform setup are all in place. The sections
@@ -34,8 +34,8 @@ SUBSCRIBED TOPICS
 
 PUBLISHED TOPICS
 ----------------
-  /arm_camera/apple_location    (geometry_msgs/msg/PointStamped)
-      The estimated 3D position of the apple in the WORLD coordinate frame.
+  /arm_camera/orange_location    (geometry_msgs/msg/PointStamped)
+      The estimated 3D position of the orange in the WORLD coordinate frame.
       A PointStamped contains:
           header.frame_id — the coordinate frame ("world")
           header.stamp    — the time this estimate was made
@@ -54,7 +54,7 @@ with depth 0.5 m is at position (0, 0, 0.5) in the CAMERA frame — but that
 camera frame is constantly changing position and orientation relative to the
 world as the arm moves.
 
-To publish a useful apple location, the result must be expressed in the WORLD
+To publish a useful orange location, the result must be expressed in the WORLD
 frame (fixed, with its origin at the robot base). tf2 handles this:
 
     transform = tf_buffer.lookup_transform(
@@ -71,18 +71,18 @@ wraps this call.
 SUGGESTED CV PIPELINE
 ----------------------
 The following is a general outline of how to go from a camera frame to a
-published apple location. This is not prescriptive — adapt it to whichever
+published orange location. This is not prescriptive — adapt it to whichever
 detection approach makes sense for the project.
 
-  1. Detect the apple in the RGB image
+  1. Detect the orange in the RGB image
      Use object detection (e.g. YOLO, or HSV color thresholding for red) to
-     locate the apple in the 2D image. The useful output is a pixel coordinate:
+     locate the orange in the 2D image. The useful output is a pixel coordinate:
      (center_x, center_y) within the 640x480 frame.
 
   2. Look up the depth at that pixel
      Index into the depth image at (center_y, center_x) — note that image
      arrays are indexed [row, col] which corresponds to [y, x]. The result
-     is the distance to the apple in meters.
+     is the distance to the orange in meters.
 
   3. Convert pixel + depth to a 3D point in camera frame
      Use the camera intrinsics from /arm_depth_camera/camera_info.
@@ -159,15 +159,15 @@ class ArmCameraLocalizer(Node):
 
         # --- Publisher ---
 
-        # The estimated apple location in world coordinates.
+        # The estimated orange location in world coordinates.
         # The manipulation node consumes this topic to plan the pick motion.
-        self._apple_location_pub = self.create_publisher(
+        self._orange_location_pub = self.create_publisher(
             PointStamped,
-            '/arm_camera/apple_location',
+            '/arm_camera/orange_location',
             10,
         )
 
-        # Bounding box for apple
+        # Bounding box for orange
         self._bounding_box_pub = self.create_publisher(
             Image,
             '/arm_camera/annotated_image',
@@ -175,9 +175,9 @@ class ArmCameraLocalizer(Node):
         )
 
         # Marker 
-        self._apple_marker_pub = self.create_publisher(
+        self._orange_marker_pub = self.create_publisher(
             Marker,
-            '/arm_camera/apple_marker',
+            '/arm_camera/orange_marker',
             10
         )
 
@@ -236,19 +236,19 @@ class ArmCameraLocalizer(Node):
         
         
 
-        # assumes there is one apple in frame
+        # assumes there is one orange in frame
         results = self.model.predict(pixels)
         center_x, center_y = None, None
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                if self.model.names[int(box.cls)] == 'apple':
+                if self.model.names[int(box.cls)] == 'orange':
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
                     center_x = int((x1 + x2) / 2)
                     center_y = int((y1 + y2) / 2)
                     cv2.rectangle(pixels, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
         
-        # store centroid if apple in frame
+        # store centroid if orange in frame
         if center_x is not None and center_y is not None:
             self._latest_centroid = np.array([center_y, center_x])
             
@@ -398,11 +398,11 @@ class ArmCameraLocalizer(Node):
         pipeline above is complete.
         """
 
-        self._apple_location_pub.publish(world_point)
+        self._orange_location_pub.publish(world_point)
 
         marker = Marker()
         marker.header.frame_id = 'world'
-        marker.ns = 'apple_detection'
+        marker.ns = 'orange_detection'
         marker.id = 0
         marker.action = Marker.ADD
         marker.type = Marker.SPHERE
@@ -415,7 +415,7 @@ class ArmCameraLocalizer(Node):
         marker.color.b = 0.0
         #marker.location=Duration(sec=0)
 
-        self._apple_marker_pub(marker)
+        self._orange_marker_pub(marker)
 
 
 def main(args=None):
