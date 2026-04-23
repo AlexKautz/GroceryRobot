@@ -116,6 +116,7 @@ echo "  OK — Dependencies installed."
 # ── 5. Build ──────────────────────────────────────────────────────────────────
 echo ""
 echo "[5/5] Building workspace..."
+rm -rf "$WS_DIR/build" "$WS_DIR/install"
 colcon build --symlink-install
 echo "  OK — Build complete."
 
