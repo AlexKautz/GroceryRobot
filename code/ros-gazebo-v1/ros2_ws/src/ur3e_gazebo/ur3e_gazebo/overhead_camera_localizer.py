@@ -140,6 +140,7 @@ class OverheadCameraLocalizer(Node):
 
         # Initialize YOLO model
         self.model = YOLO("yolov8n.pt")
+        self.model.to('cpu')
 
         # --- Subscriptions ---
 
