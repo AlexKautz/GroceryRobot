@@ -313,9 +313,10 @@ class OverheadCameraLocalizer(Node):
         #   Verify the value is finite before using it downstream.
             
         if self._latest_centroid is not None:
-            depth_value = depth_pixels[self._latest_centroid]
-            if np.isfinite(depth_value):
-                self._depth = depth_value
+            row, col = int(self._latest_centroid[0]), int(self._latest_centroid[1]) # ensure depth lookup returns scalar)
+            depth_value = depth_pixels[row,col]
+            if np.isfinite(float(depth_value)):
+                self._depth = float(depth_value)
 
     # ------------------------------------------------------------------ #
     #  CAMERA INFO CALLBACK                                                #
