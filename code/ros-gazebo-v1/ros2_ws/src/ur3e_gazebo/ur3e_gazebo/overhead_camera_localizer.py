@@ -254,7 +254,7 @@ class OverheadCameraLocalizer(Node):
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                if self.model.names[int(box.cls)] == 'sports ball':
+                if self.model.names[int(box.cls)] in ['sports ball', '2 traffic lights']:
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
                     center_x = int((x1 + x2) / 2)
                     center_y = int((y1 + y2) / 2)
