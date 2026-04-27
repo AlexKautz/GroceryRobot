@@ -133,6 +133,13 @@ def generate_launch_description():
         )
     )
 
+    # Adding perception node
+    overhead_localizer = Node(
+        package='ur3e_gazebo',
+        executable='overhead_camera_localizer',
+        output='screen',
+    )
+
 
 
     return LaunchDescription([
@@ -144,4 +151,5 @@ def generate_launch_description():
         load_joint_state_broadcaster,
         load_joint_trajectory_controller,
         load_home_pose,
+        overhead_localizer,
     ])
