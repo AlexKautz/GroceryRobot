@@ -254,7 +254,7 @@ class OverheadCameraLocalizer(Node):
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                if self.model.names[int(box.cls)] in ['sports ball', '2 traffic lights']:
+                if self.model.names[int(box.cls)] in ['sports ball']:
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
                     center_x = int((x1 + x2) / 2)
                     center_y = int((y1 + y2) / 2)
@@ -313,7 +313,8 @@ class OverheadCameraLocalizer(Node):
         #   Verify the value is finite before using it downstream.
             
         if self._latest_centroid is not None:
-            depth_value = depth_pixels[self._latest_centroid]
+            row, col = int(self._latest_centroid[0]), int(self._latest_centroid[1])
+            depth_value = float(depth_pixels[row, col])
             if np.isfinite(depth_value):
                 self._depth = depth_value
 

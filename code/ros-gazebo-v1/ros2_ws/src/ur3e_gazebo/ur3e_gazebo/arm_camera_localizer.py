@@ -244,7 +244,7 @@ class ArmCameraLocalizer(Node):
         for result in results:
             boxes = result.boxes
             for box in boxes:
-                if self.model.names[int(box.cls)] == 'apple':
+                if self.model.names[int(box.cls)] in ['sports ball']:
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
                     center_x = int((x1 + x2) / 2)
                     center_y = int((y1 + y2) / 2)
@@ -296,7 +296,8 @@ class ArmCameraLocalizer(Node):
         #   Note the [y, x] indexing — rows come first in numpy arrays.
         #   Verify the value is finite before using it downstream.
         if self._latest_centroid is not None:
-            depth_value = depth_pixels[self._latest_centroid]
+            row, col = int(self._latest_centroid[0]), int(self._latest_centroid[1])
+            depth_value = float(depth_pixels[self._latest_centroid])
             if np.isfinite(depth_value):
                 self._depth = depth_value
 
