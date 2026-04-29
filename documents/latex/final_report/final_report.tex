@@ -1,0 +1,127 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{A Very Cool and Catchy Title}
+\author{Authors' names go here }
+\date{\vspace{-1em}}
+
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{parskip} % Paragraphs use vertical spacing instead of indentation.
+
+\begin{document}
+
+\maketitle
+
+% for final report only
+%\begin{abstract}
+%A one paragraph high level description of the work. The abstract is typically the first thing someone would read from the paper before deciding whether to continue reading and hence, serves as an advertisement to the reader to read the whole paper. 
+%\end{abstract}
+
+\section{Introduction}
+
+\textit{The introduction should describe the problem (in a non-technical manner, i.e., without math, equations, etc.), as well as motivate the problem, i.e., why is it important?}
+
+Imagine a future where you receive a box of groceries from a delivery service (like Amazon), take the box to your kitchen table, and open it. Then, a helpful robotic arm takes items out of the box and puts them away. The arm knows the best place for each item, be it the cupboard, fridge, or freezer.
+This kind of assistance can be a powerful utility for elderly or disabled individuals, as well as for professional kitchens where inventory management is a major time sink.
+
+For our project, we simulated a version of this arm using Gazebo in order to explore the problem space. We measured the effects that varying grocery density within the box, item shape, and camera configurations have on the reliability of the placement system.
+We hope this work can lead to real-world implementations.
+
+
+
+\section{Background Related Work}
+
+\textit{Following, you should provide the necessary background and discuss related work in the RL literature. This section should also be about a page. Citations should be in BibTeX format \citep{thrun2005probabilistic}.}
+
+\textbf{We should copy the background and related work from our proposal and then expand upon it.}
+
+\textbf{We can expand upon it by rewriting our notes from each article we read.}
+
+\section{Technical Approach / Methodology / Theoretical Framework}
+
+% for proposal
+%Describe how you will approach the problem and its technical formulation. Feel free to re-state the basic RL formulas (e.g., if using Q-learning, state the update rule or the formula for what the Q function approximates). 
+
+
+% for final report
+\textit{A detailed description of your problem (with math, notation, algorithms, figures, etc.). Use footnotes to cite links to your code or videos. Add a footnote like "All developed source code for this project is available at ..."}
+
+\textit{Notation and Problem Formulation
+How did you formalize the problem using mathematical notation?
+Tasks
+Subsections are useful for breaking down the problem into sub-parts. For example, you could break down the tasks for your project and list them one by one. 
+}
+
+\subsection{Theoretical Framework}
+
+\subsubsection{Computer Vision}
+
+How we use computer vision for both object identification and location. Include a description of the YOLO algorithem.
+
+\subsubsection{Trajectory Calculation}
+
+How we used Move-It! to calculate the trajectory while avoiding objects
+
+\subsubsection{Destination Determination}
+
+How we used a lookup table after identifying the object from computer vision
+
+\subsection{Technical Approach}
+
+\subsubsection{Simulation Environment}
+
+For our simulation, we employed Gazebo~\cite{koenig2004gazebo}, an open-source robotics simulator with deep integration into ROS~\cite{quigley2009ros}. Gazebo enables the construction of digital replicas of physical robots within customizable 3D environments.
+
+We designed an environment that was as simple as possible while still representing our project. We used a two-tier shelf to represent the cabinet, refrigerator, and freezer combination. This retained the concept of having different locations to place objects. We used a simple surface opposite the robot in place of the table and box that contain the groceries. Finally, for the groceries themselves, we used basic shapes, such as a sphere for the apple.
+
+\textbf{TODO - take a screenshot of the environment and place it here. Don't forget to add a subtitle}
+
+\textbf{TODO - if we end up with multiple groceries line them up next to each other and have an image here with the subtitle labeling them}
+
+The environment also contains an overhead camera that sends images to the ROS system, where they are picked up by the computer vision nodes.
+
+\textbf{TODO - an image of the overhead view of the environment. Don't forget to add a subtitle}
+
+Conceptually, the robot is treated as separate from the environment so that it can be swapped out, but it is positioned at the center of the scene, where it can reach both the groceries and the shelf while still facing a non-trivial placement task.
+
+
+\subsubsection{Robot Arm and Gripper}
+
+For this project, we used the robotic arm...
+It had the advantage of being...
+
+For the gripper, we used two blocks that open and close. While this designed only makes sense in the simulation, it's simplicity let us focus on other aspects of the work.
+
+\subsubsection{ROS}
+
+A list of the ROS nodes...
+
+\subsection{Methodology}
+
+For our experiment design we started off with a single apple object...
+
+
+% for final report
+\section{Experimental Results / Technical Demonstration}
+
+A description of how you evaluated or demonstrated your solution.\footnote{a video of the robot doing x y z is available at...} 
+
+% for proposal
+%\section{Experiments and Evaluation}
+
+%Describe how you will evaluate your approach/solution. What constitutes success? What metrics will you use? Do you have any preliminary hypothesis that you plan to test? Also, describe the RL domain or environment you plan to use. 
+
+% for final report
+\section{Conclusion and Future Work}
+
+A high level summary of what was accomplished, along with a discussion on limitations and avenues for future work (typically 2 to 3 paragraphs). 
+
+
+%\section{Timeline and Individual Responsibilities}
+
+%State the timeline in terms of weeks and milestones you want to achieve. If working on a team, state what the individual responsibilities are at this point (i.e., who is going to do what, these may of course change over the course of the project). \cite{short2010no}.
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}
