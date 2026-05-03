@@ -130,8 +130,6 @@ class ArmCameraLocalizer(Node):
         self.model = YOLO("yolov8n.pt")
         self.model.to('cpu')
 
-        self.bridge = CvBridge()
-
         # --- Subscriptions ---
 
         # RGB image from the wrist camera — the primary input for detection
@@ -250,9 +248,11 @@ class ArmCameraLocalizer(Node):
                     center_y = int((y1 + y2) / 2)
                     cv2.rectangle(pixels, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
         
-        # store centroid if apple in frame
+        # store centroid if apple in frame, clear it if not
         if center_x is not None and center_y is not None:
             self._latest_centroid = np.array([center_y, center_x])
+        else:
+            self._latest_centroid = None
             
         # convert pixels to cv2 image
         cv_img = self.bridge.cv2_to_imgmsg(pixels, 'rgb8')
@@ -297,7 +297,7 @@ class ArmCameraLocalizer(Node):
         #   Verify the value is finite before using it downstream.
         if self._latest_centroid is not None:
             row, col = int(self._latest_centroid[0]), int(self._latest_centroid[1])
-            depth_value = float(depth_pixels[self._latest_centroid])
+            depth_value = float(depth_pixels[row, col])
             if np.isfinite(depth_value):
                 self._depth = depth_value
 
@@ -418,19 +418,13 @@ class ArmCameraLocalizer(Node):
         marker.color.b = 0.0
         #marker.location=Duration(sec=0)
 
-        self._apple_marker_pub(marker)
+        self._apple_marker_pub.publish(marker)
 
 
 def main(args=None):
-    rclpy.init(args=args)
-    node = ArmCameraLocalizer()
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    # Disabled — arm camera localizer not currently in use.
+    print('[arm_camera_localizer] disabled — exiting.')
+    return
 
 
 if __name__ == '__main__':
