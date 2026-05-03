@@ -35,6 +35,7 @@ setup(
             'overhead_camera_localizer = ur3e_gazebo.overhead_camera_localizer:main',
             'pick_and_place = ur3e_gazebo.pick_and_place:main',
             'joint_control_panel = ur3e_gazebo.joint_control_panel:main',
+            'apple_picker = ur3e_gazebo.apple_picker:main',   # add this
         ],
     },
 )
