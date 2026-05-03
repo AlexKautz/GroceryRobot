@@ -58,8 +58,8 @@ from builtin_interfaces.msg import Duration
 #  TIMING  — edit these to adjust the speed of the sequence
 # ═══════════════════════════════════════════════════════════════════════════════
 
-MOVE_DURATION_SEC = 4.0   # seconds given to the arm to reach each pose
-HOLD_SEC          = 2.0   # seconds to wait after arriving before the next step
+MOVE_DURATION_SEC = 2.0   # seconds given to the arm to reach each pose
+HOLD_SEC          = 7.0   # seconds to wait after arriving before the next step
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

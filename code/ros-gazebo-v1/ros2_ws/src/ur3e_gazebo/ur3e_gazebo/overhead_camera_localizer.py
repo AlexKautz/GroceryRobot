@@ -227,7 +227,7 @@ class OverheadCameraLocalizer(Node):
         # The three channels are R, G, B in that order.
         pixels = np.frombuffer(msg.data, dtype=np.uint8).reshape(
             msg.height, msg.width, 3
-        )
+        ).copy()
         mean_r = float(np.mean(pixels[:, :, 0]))
         mean_g = float(np.mean(pixels[:, :, 1]))
         mean_b = float(np.mean(pixels[:, :, 2]))
@@ -261,9 +261,11 @@ class OverheadCameraLocalizer(Node):
                     cv2.rectangle(pixels, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
         
 
-        # store centroid if apple in frame
+        # store centroid if apple in frame, clear it if not
         if center_x is not None and center_y is not None:
             self._latest_centroid = np.array([center_y, center_x])
+        else:
+            self._latest_centroid = None
 
         # convert pixels to cv2 image
         cv_img = self.bridge.cv2_to_imgmsg(pixels, 'rgb8')
