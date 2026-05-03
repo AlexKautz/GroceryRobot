@@ -84,3 +84,6 @@ GroceryRobot/
 4. Squash merge when approved
 
 Notes are stored as Markdown. [Obsidian](https://obsidian.md/) works well — open the repo root folder to get started.
+
+## Overleaf
+The equivalent Overleaf project can be found at https://www.overleaf.com/project/69efb0f4a3da6a34ba808193.
