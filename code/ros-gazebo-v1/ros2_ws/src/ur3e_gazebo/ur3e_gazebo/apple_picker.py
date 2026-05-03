@@ -3,29 +3,37 @@ from rclpy.node import Node
 from geometry_msgs.msg import PointStamped, PoseStamped
 from moveit.planning import MoveItPy
 
+from moveit_configs_utils import MoveItConfigsBuilder
 
 class ApplePicker(Node):
-
-    FINGER_LENGTH = 0.14      # palm (0.04) + finger (0.10) in meters
-    APPROACH_OFFSET = 0.05    # hover above apple before descending
 
     def __init__(self):
         super().__init__('apple_picker')
 
-        self.moveit = MoveItPy(node_name='apple_picker_moveit')
-        # "ur_manipulator" is the standard group name in UR SRDF files
-        # verify with: cat your_moveit_config/config/ur3e.srdf
+        # Load config the same way the launch file does
+        moveit_config = (
+            MoveItConfigsBuilder("ur3e", package_name="ur3e_moveit_config")
+            .planning_pipelines(
+                pipelines=["ompl"],
+                default_planning_pipeline="ompl"
+            )
+            .to_moveit_configs()
+        )
+
+        self.moveit = MoveItPy(
+            node_name='apple_picker_moveit',
+            config_dict=moveit_config.to_dict()
+        )
         self.arm = self.moveit.get_planning_component('ur_manipulator')
 
         self._apple_location = None
-
         self.create_subscription(
             PointStamped,
             '/overhead_camera/apple_location',
             self._apple_callback,
             10
         )
-
+        
     def _apple_callback(self, msg: PointStamped):
         self._apple_location = msg
 
