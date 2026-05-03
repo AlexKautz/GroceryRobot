@@ -47,6 +47,12 @@ if pgrep -f "robot_state_publisher\|parameter_bridge" > /dev/null 2>&1; then
     any_killed=true
 fi
 
+if pgrep -f "joint_control_panel" > /dev/null 2>&1; then
+    echo "Stopping joint control panel..."
+    pkill -9 -f "joint_control_panel" || true
+    any_killed=true
+fi
+
 sleep 1
 
 if [ "$any_killed" = false ]; then
