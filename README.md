@@ -17,19 +17,12 @@ bash setup.sh
 
 **Every time after that:**
 ```bash
-source /opt/ros/kilted/setup.bash
-source code/ros-gazebo-v1/ros2_ws/install/setup.bash
-ros2 launch ur3e_gazebo ur3e_gazebo.launch.py
+bash launch.sh
 ```
 
-Click **Play** in Gazebo. The arm will move to its home pose facing the table.
+`launch.sh` tears down any running simulation, optionally rebuilds the workspace, then opens an interactive launch manager where you can select which nodes to start. Nodes can be set to **auto** (start immediately) or **manual** (start from the dashboard when ready). Your selections are remembered for next time.
 
-**To run the pick-and-place sequence** (in a second terminal, after clicking Play):
-```bash
-source /opt/ros/kilted/setup.bash
-source code/ros-gazebo-v1/ros2_ws/install/setup.bash
-ros2 run ur3e_gazebo pick_and_place
-```
+Click **Play** in Gazebo after it opens. The arm will move to its home pose facing the table.
 
 **To stop everything:**
 ```bash
@@ -54,6 +47,8 @@ bash teardown.sh
 
 ```
 GroceryRobot/
+├── launch.sh                       # Entry point — run this to start everything
+├── launch.py                       # Interactive node manager (called by launch.sh)
 ├── setup.sh                        # First-time setup on a new machine
 ├── teardown.sh                     # Stop all running simulation processes
 ├── code/
@@ -89,3 +84,6 @@ GroceryRobot/
 4. Squash merge when approved
 
 Notes are stored as Markdown. [Obsidian](https://obsidian.md/) works well — open the repo root folder to get started.
+
+## Overleaf
+The equivalent Overleaf project can be found at https://www.overleaf.com/project/69efb0f4a3da6a34ba808193.

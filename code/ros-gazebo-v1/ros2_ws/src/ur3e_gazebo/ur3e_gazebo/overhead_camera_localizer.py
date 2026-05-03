@@ -255,15 +255,18 @@ class OverheadCameraLocalizer(Node):
             boxes = result.boxes
             for box in boxes:
                 if self.model.names[int(box.cls)] in ['sports ball']:
+                if self.model.names[int(box.cls)] in ['sports ball']:
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
                     center_x = int((x1 + x2) / 2)
                     center_y = int((y1 + y2) / 2)
                     cv2.rectangle(pixels, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
         
 
-        # store centroid if apple in frame
+        # store centroid if apple in frame, clear it if not
         if center_x is not None and center_y is not None:
             self._latest_centroid = np.array([center_y, center_x])
+        else:
+            self._latest_centroid = None
 
         # convert pixels to cv2 image
         cv_img = self.bridge.cv2_to_imgmsg(pixels, 'rgb8')

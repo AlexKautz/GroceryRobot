@@ -25,7 +25,7 @@ echo "============================================="
 echo ""
 
 # ── 1. ROS 2 Kilted ──────────────────────────────────────────────────────────
-echo "[1/5] Checking ROS 2 Kilted..."
+echo "[1/6] Checking ROS 2 Kilted..."
 
 if [ -z "${ROS_DISTRO:-}" ]; then
     echo ""
@@ -49,7 +49,7 @@ fi
 
 # ── 2. System packages ────────────────────────────────────────────────────────
 echo ""
-echo "[2/5] Checking required system packages..."
+echo "[2/6] Checking required system packages..."
 
 REQUIRED_PACKAGES=(
     "ros-kilted-gz-sim-vendor"
@@ -83,7 +83,7 @@ fi
 
 # ── 3. Universal Robots description package ───────────────────────────────────
 echo ""
-echo "[3/5] Checking Universal_Robots_ROS2_Description..."
+echo "[3/6] Checking Universal_Robots_ROS2_Description..."
 
 if [ -d "$UR_DIR/.git" ]; then
     echo "  OK — Already cloned at $UR_DIR"
@@ -96,7 +96,7 @@ fi
 
 # ── 4. rosdep ─────────────────────────────────────────────────────────────────
 echo ""
-echo "[4/5] Installing ROS dependencies via rosdep..."
+echo "[4/6] Installing ROS dependencies via rosdep..."
 
 if ! rosdep db &>/dev/null; then
     echo ""
@@ -115,9 +115,31 @@ echo "  OK — Dependencies installed."
 
 # ── 5. Build ──────────────────────────────────────────────────────────────────
 echo ""
-echo "[5/5] Building workspace..."
+echo "[5/6] Building workspace..."
 colcon build --symlink-install
 echo "  OK — Build complete."
+
+# ── 6. Python virtual environment ─────────────────────────────────────────────
+echo ""
+echo "[6/6] Setting up Python virtual environment..."
+
+VENV_DIR="$REPO_DIR/venv"
+if [ ! -d "$VENV_DIR" ]; then
+    echo "  Creating venv at $VENV_DIR..."
+    if command -v uv &>/dev/null; then
+        uv venv "$VENV_DIR" --python "$(which python3)"
+    else
+        python3 -m venv "$VENV_DIR"
+    fi
+fi
+
+echo "  Installing Python dependencies (ultralytics, opencv-python)..."
+if command -v uv &>/dev/null; then
+    uv pip install --python "$VENV_DIR/bin/python3" "numpy<2" ultralytics opencv-python
+else
+    "$VENV_DIR/bin/pip" install "numpy<2" ultralytics opencv-python
+fi
+echo "  OK — Python environment ready."
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
