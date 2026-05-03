@@ -134,6 +134,7 @@ NODES: list[NodeEntry] = [
     NodeEntry("Overhead Camera Localizer", "ros2 run ur3e_gazebo overhead_camera_localizer"),
     NodeEntry("Joint Control Panel",       "ros2 run ur3e_gazebo joint_control_panel"),
     NodeEntry("Image Viewer",              "QT_QPA_PLATFORM=xcb ros2 run rqt_image_view rqt_image_view /overhead_camera/annotated_image"),
+    NodeEntry("Apple Picker",              "ros2 run ur3e_gazebo apple_picker",              mode="manual"),
 ]
 
 
