@@ -15,8 +15,15 @@ source /opt/ros/kilted/setup.bash
 # 2. Stop any running simulation
 bash "$REPO/teardown.sh"
 
-# 3. Rebuild the workspace (colcon build + dependency checks)
-bash "$REPO/setup.sh"
+# 3. Optionally rebuild the workspace
+echo ""
+read -r -t 10 -p "  Rebuild workspace? [s = run setup.sh, Enter = skip]: " REBUILD_CHOICE || true
+echo ""
+if [ "${REBUILD_CHOICE}" = "s" ]; then
+    bash "$REPO/setup.sh"
+else
+    echo "  Skipping rebuild."
+fi
 
 # 4. Source the freshly built workspace
 source "$WS/install/setup.bash"

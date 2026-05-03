@@ -117,6 +117,7 @@ NODES: list[NodeEntry] = [
     NodeEntry("Arm Camera Localizer",      "ros2 run ur3e_gazebo arm_camera_localizer"),
     NodeEntry("Overhead Camera Localizer", "ros2 run ur3e_gazebo overhead_camera_localizer"),
     NodeEntry("Joint Control Panel",       "ros2 run ur3e_gazebo joint_control_panel"),
+    NodeEntry("Image Viewer",              "QT_QPA_PLATFORM=xcb ros2 run rqt_image_view rqt_image_view /overhead_camera/annotated_image"),
 ]
 
 
@@ -156,11 +157,11 @@ def stage_selection(nodes: list[NodeEntry]) -> None:
         print(_c("═" * 54, BOLD))
         print()
         print(_c("  Controls:", BOLD))
-        print(f"    {_c('1-5', CYAN)}      toggle node on / off")
+        print(f"    {_c('1-6', CYAN)}      toggle node(s) on / off  (e.g. {_c('145', CYAN)} toggles 1, 4 and 5)")
         print(f"    {_c('m<n>', CYAN)}     flip start mode  (e.g. {_c('m2', CYAN)} flips node 2)")
         print(f"           {_c('auto', CYAN)} = starts immediately   {_c('manual', YELLOW)} = you trigger it from the dashboard")
         print(f"    {_c('Enter', CYAN)}    confirm selection and launch")
-        print(f"    {_c('Ctrl-C', CYAN)}   quit")
+        print(f"    {_c('q', CYAN)}        quit")
         print()
         for i, node in enumerate(nodes, 1):
             check    = _c("x", GREEN) if node.selected else " "
@@ -172,7 +173,9 @@ def stage_selection(nodes: list[NodeEntry]) -> None:
         except (EOFError, KeyboardInterrupt):
             sys.exit(0)
 
-        if raw == "":
+        if raw in ("q", "quit"):
+            sys.exit(0)
+        elif raw == "":
             if any(n.selected for n in nodes):
                 return
             print(_c("  Select at least one node.", RED))
@@ -181,8 +184,11 @@ def stage_selection(nodes: list[NodeEntry]) -> None:
             idx = int(raw[1]) - 1
             if 0 <= idx < len(nodes):
                 nodes[idx].mode = "manual" if nodes[idx].mode == "auto" else "auto"
-        elif raw.isdigit() and 1 <= int(raw) <= len(nodes):
-            nodes[int(raw) - 1].selected = not nodes[int(raw) - 1].selected
+        elif raw.isdigit():
+            for ch in raw:
+                idx = int(ch) - 1
+                if 0 <= idx < len(nodes):
+                    nodes[idx].selected = not nodes[idx].selected
 
 
 # ─── Stage 2: Launch ──────────────────────────────────────────────────────────
