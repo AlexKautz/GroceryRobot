@@ -34,6 +34,9 @@ code/ros-gazebo-v1/ros2_ws/src/Universal_Robots_ROS2_Description/
 ### OBSIDIAN ###
 .obsidian
 
+### LOCAL PREFS ###
+launch_prefs.json
+
 ### PYTHON ###
 
 # Byte-compiled / optimized / DLL files

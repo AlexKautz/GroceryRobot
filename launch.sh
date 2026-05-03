@@ -16,13 +16,36 @@ source /opt/ros/kilted/setup.bash
 bash "$REPO/teardown.sh"
 
 # 3. Optionally rebuild the workspace
+PREFS_FILE="$REPO/launch_prefs.json"
+LAST_REBUILD=$(python3 -c "
+import json, sys
+try:
+    print('s' if json.load(open('$PREFS_FILE')).get('rebuild', False) else 'skip')
+except Exception:
+    print('skip')
+" 2>/dev/null || echo "skip")
+
 echo ""
-read -r -t 10 -p "  Rebuild workspace? [s = run setup.sh, Enter = skip]: " REBUILD_CHOICE || true
+read -r -t 10 -p "  Rebuild workspace? [s = run setup.sh, Enter = skip]  (last: $LAST_REBUILD): " REBUILD_CHOICE || true
 echo ""
 if [ "${REBUILD_CHOICE}" = "s" ]; then
     bash "$REPO/setup.sh"
+    python3 -c "
+import json, os
+f='$PREFS_FILE'
+d = json.load(open(f)) if os.path.exists(f) else {}
+d['rebuild'] = True
+json.dump(d, open(f, 'w'), indent=2)
+" 2>/dev/null || true
 else
     echo "  Skipping rebuild."
+    python3 -c "
+import json, os
+f='$PREFS_FILE'
+d = json.load(open(f)) if os.path.exists(f) else {}
+d['rebuild'] = False
+json.dump(d, open(f, 'w'), indent=2)
+" 2>/dev/null || true
 fi
 
 # 4. Source the freshly built workspace

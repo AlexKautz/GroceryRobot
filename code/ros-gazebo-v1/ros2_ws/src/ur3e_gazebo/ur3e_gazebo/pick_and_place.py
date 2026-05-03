@@ -59,7 +59,7 @@ from builtin_interfaces.msg import Duration
 # ═══════════════════════════════════════════════════════════════════════════════
 
 MOVE_DURATION_SEC = 2.0   # seconds given to the arm to reach each pose
-HOLD_SEC          = 5.0   # seconds to wait after arriving before the next step
+HOLD_SEC          = 7.0   # seconds to wait after arriving before the next step
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

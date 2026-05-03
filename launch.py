@@ -6,6 +6,7 @@ Run via:  bash launch.sh
 
 import dataclasses
 import datetime
+import json
 import os
 import pathlib
 import re
@@ -21,8 +22,23 @@ from typing import Optional
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 
-REPO_DIR = pathlib.Path(__file__).parent.resolve()
-LOGS_DIR = REPO_DIR / "logs"
+REPO_DIR  = pathlib.Path(__file__).parent.resolve()
+LOGS_DIR  = REPO_DIR / "logs"
+PREFS_FILE = REPO_DIR / "launch_prefs.json"
+
+
+# ─── Preferences ──────────────────────────────────────────────────────────────
+
+def _load_prefs() -> dict:
+    try:
+        return json.loads(PREFS_FILE.read_text())
+    except Exception:
+        return {}
+
+def _save_node_prefs(nodes: list) -> None:
+    prefs = _load_prefs()
+    prefs["nodes"] = {n.name: {"selected": n.selected, "mode": n.mode} for n in nodes}
+    PREFS_FILE.write_text(json.dumps(prefs, indent=2))
 
 
 # ─── ANSI helpers ─────────────────────────────────────────────────────────────
@@ -150,6 +166,12 @@ def read_key(timeout: float = 2.0) -> Optional[str]:
 # ─── Stage 1: Node selection ──────────────────────────────────────────────────
 
 def stage_selection(nodes: list[NodeEntry]) -> None:
+    node_prefs = _load_prefs().get("nodes", {})
+    for node in nodes:
+        if node.name in node_prefs:
+            node.selected = node_prefs[node.name].get("selected", node.selected)
+            node.mode     = node_prefs[node.name].get("mode",     node.mode)
+
     while True:
         print(CLEAR, end="")
         print(_c("═" * 54, BOLD))
@@ -177,6 +199,7 @@ def stage_selection(nodes: list[NodeEntry]) -> None:
             sys.exit(0)
         elif raw == "":
             if any(n.selected for n in nodes):
+                _save_node_prefs(nodes)
                 return
             print(_c("  Select at least one node.", RED))
             time.sleep(1.0)
