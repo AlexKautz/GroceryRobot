@@ -28,6 +28,14 @@ class ApplePicker(Node):
 
         # Write config dict to a temp yaml file
         config_dict = moveit_config.to_dict()
+
+        # ROS param files
+        ros_params = {
+            'apple_picker_moveit': {
+                'ros__parameters': config_dict
+            }
+        }
+
         with tempfile.NamedTemporaryFile(
             mode='w', suffix='.yaml', delete=False
         ) as f:
