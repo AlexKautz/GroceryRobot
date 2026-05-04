@@ -18,25 +18,11 @@ class ApplePicker(Node):
     def __init__(self):
         super().__init__('apple_picker')
 
-        config_path = os.path.join(
-            get_package_share_directory('ur3e_moveit_config'),
-            'config'
-        )
-
-        self.moveit = MoveItPy(
-            node_name='apple_picker_moveit',
-            launch_params_filepaths=[
-                os.path.join(config_path, 'ur3e.srdf'),
-                os.path.join(config_path, 'kinematics.yaml'),
-                os.path.join(config_path, 'joint_limits.yaml'),
-                os.path.join(config_path, 'ompl_planning.yaml'),
-                os.path.join(config_path, 'moveit_controllers.yaml'),
-            ]
-        )
-
+        # No config loading here — the launch file passes it as parameters
+        self.moveit = MoveItPy(node_name='apple_picker_moveit')
         self.arm = self.moveit.get_planning_component('ur_manipulator')
-        self._apple_location = None
 
+        self._apple_location = None
         self.create_subscription(
             PointStamped,
             '/overhead_camera/apple_location',
