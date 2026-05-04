@@ -2,10 +2,12 @@ import os
 import yaml
 import tempfile
 import rclpy
+import os
 from rclpy.node import Node
 from geometry_msgs.msg import PointStamped, PoseStamped
 from moveit.planning import MoveItPy
 from moveit_configs_utils import MoveItConfigsBuilder
+from ament_index_python.packages import get_package_share_directory
 
 
 class ApplePicker(Node):
@@ -16,40 +18,21 @@ class ApplePicker(Node):
     def __init__(self):
         super().__init__('apple_picker')
 
-        # Build config and write to temp file for MoveItPy to load
-        moveit_config = (
-            MoveItConfigsBuilder("ur3e", package_name="ur3e_moveit_config")
-            .planning_pipelines(
-                pipelines=["ompl"],
-                default_planning_pipeline="ompl"
-            )
-            .to_moveit_configs()
+        config_path = os.path.join(
+            get_package_share_directory('ur3e_moveit_config'),
+            'config'
         )
-
-        # Write config dict to a temp yaml file
-        config_dict = moveit_config.to_dict()
-
-        # ROS param files
-        ros_params = {
-            'apple_picker_moveit': {
-                'ros__parameters': config_dict
-            }
-        }
-
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.yaml', delete=False
-        ) as f:
-            yaml.dump(config_dict, f)
-            params_file = f.name
-
-        self.get_logger().info(f'Loading MoveIt config from: {params_file}')
 
         self.moveit = MoveItPy(
             node_name='apple_picker_moveit',
-            launch_params_filepaths=[params_file]
+            launch_params_filepaths=[
+                os.path.join(config_path, 'ur3e.srdf'),
+                os.path.join(config_path, 'kinematics.yaml'),
+                os.path.join(config_path, 'joint_limits.yaml'),
+                os.path.join(config_path, 'ompl_planning.yaml'),
+                os.path.join(config_path, 'moveit_controllers.yaml'),
+            ]
         )
-
-        os.unlink(params_file)  # clean up temp file
 
         self.arm = self.moveit.get_planning_component('ur_manipulator')
         self._apple_location = None
