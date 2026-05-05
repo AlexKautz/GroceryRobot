@@ -1,0 +1,1 @@
+/home/zhenkai-gao/grocery_bot/GroceryRobot/code/ros-gazebo-v1/ros2_ws/build/ur_description/ament_cmake_core/ur_descriptionConfig-version.cmake

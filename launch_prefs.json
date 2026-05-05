@@ -1,0 +1,29 @@
+{
+  "rebuild": true,
+  "nodes": {
+    "Simulation": {
+      "selected": true,
+      "mode": "auto"
+    },
+    "Pick and Place": {
+      "selected": true,
+      "mode": "manual"
+    },
+    "Arm Camera Localizer": {
+      "selected": true,
+      "mode": "auto"
+    },
+    "Overhead Camera Localizer": {
+      "selected": true,
+      "mode": "auto"
+    },
+    "Joint Control Panel": {
+      "selected": true,
+      "mode": "auto"
+    },
+    "Image Viewer": {
+      "selected": true,
+      "mode": "auto"
+    }
+  }
+}
