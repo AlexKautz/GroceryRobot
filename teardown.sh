@@ -15,49 +15,32 @@ echo "  GroceryRobot Simulation Teardown"
 echo "============================================="
 echo ""
 
+_kill9() {
+    local pattern="$1"
+    local label="$2"
+    if pgrep -f "$pattern" > /dev/null 2>&1; then
+        echo "Stopping $label..."
+        pkill -9 -f "$pattern" || true
+        return 0
+    fi
+    return 1
+}
+
 any_killed=false
 
-if pgrep -f "ros2" > /dev/null 2>&1; then
-    echo "Stopping ros2 processes..."
-    pkill -f "ros2" || true
-    any_killed=true
-fi
-
-if pgrep -f "gz sim" > /dev/null 2>&1; then
-    echo "Stopping Gazebo..."
-    pkill -f "gz sim" || true
-    any_killed=true
-fi
-
-if pgrep -f "gzserver\|gzclient\|gz-sim" > /dev/null 2>&1; then
-    echo "Stopping Gazebo server/client..."
-    pkill -f "gzserver\|gzclient\|gz-sim" || true
-    any_killed=true
-fi
-
-if pgrep -f "spawner" > /dev/null 2>&1; then
-    echo "Stopping controller spawner..."
-    pkill -f "spawner" || true
-    any_killed=true
-fi
-
-if pgrep -f "robot_state_publisher\|parameter_bridge" > /dev/null 2>&1; then
-    echo "Stopping ROS bridge/state publisher..."
-    pkill -f "robot_state_publisher\|parameter_bridge" || true
-    any_killed=true
-fi
-
-if pgrep -f "joint_control_panel" > /dev/null 2>&1; then
-    echo "Stopping joint control panel..."
-    pkill -9 -f "joint_control_panel" || true
-    any_killed=true
-fi
-
-if pgrep -f "rqt_image_view" > /dev/null 2>&1; then
-    echo "Stopping image viewer..."
-    pkill -9 -f "rqt_image_view" || true
-    any_killed=true
-fi
+_kill9 "ros2"                   "ros2 processes"        && any_killed=true
+_kill9 "gz sim"                 "Gazebo (gz sim)"       && any_killed=true
+_kill9 "gzserver"               "Gazebo server"         && any_killed=true
+_kill9 "gzclient"               "Gazebo client"         && any_killed=true
+_kill9 "gz-sim"                 "gz-sim"                && any_killed=true
+_kill9 "spawner"                "controller spawner"    && any_killed=true
+_kill9 "parameter_bridge"       "ROS-Gz bridge"         && any_killed=true
+_kill9 "robot_state_publisher"  "robot state publisher" && any_killed=true
+_kill9 "joint_control_panel"    "joint control panel"   && any_killed=true
+_kill9 "rqt_image_view"         "image viewer"          && any_killed=true
+_kill9 "move_group"             "MoveIt move_group"     && any_killed=true
+_kill9 "moveit_pick_from_camera" "pick node"            && any_killed=true
+_kill9 "overhead_camera_localizer" "camera localizer"   && any_killed=true
 
 sleep 1
 

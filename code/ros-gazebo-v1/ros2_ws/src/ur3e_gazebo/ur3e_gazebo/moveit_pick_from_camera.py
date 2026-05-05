@@ -3,9 +3,13 @@
 import time
 from copy import deepcopy
 
+import math
+
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
+
+import tf2_ros
 
 from geometry_msgs.msg import PointStamped, Pose, PoseStamped, Quaternion
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
@@ -58,7 +62,7 @@ class MoveItPickFromCamera(Node):
 
         # Goal tolerances
         self.declare_parameter('position_tolerance', 0.03)
-        self.declare_parameter('orientation_tolerance', 3.14)
+        self.declare_parameter('orientation_tolerance', 0.05)
 
         # Pick offsets, in meters
         self.declare_parameter('pre_grasp_z_offset', 0.20)
@@ -148,9 +152,13 @@ class MoveItPickFromCamera(Node):
             10,
         )
 
+        self._tf_buffer = tf2_ros.Buffer()
+        self._tf_listener = tf2_ros.TransformListener(self._tf_buffer, self)
+
         self._busy = False
         self._sequence = []
         self._active_step_name = None
+        self._active_target_pose: PoseStamped = None
         self._step_start_time: float = 0.0
         self._retry_after: float = 0.0   # wall-clock time before next pick is allowed
 
@@ -341,6 +349,7 @@ class MoveItPickFromCamera(Node):
 
         step_name, pose = self._sequence.pop(0)
         self._active_step_name = step_name
+        self._active_target_pose = pose
         self._step_start_time = time.monotonic()
 
         self.get_logger().info(
@@ -411,6 +420,7 @@ class MoveItPickFromCamera(Node):
         self.get_logger().info(
             f'[{step}] MoveIt SUCCESS after {elapsed:.2f}s (error_code={error_code})'
         )
+        self._log_actual_pose(step)
 
         # Gripper actions at important points
         if self._active_step_name == 'grasp':
@@ -432,6 +442,52 @@ class MoveItPickFromCamera(Node):
         self.get_logger().info(f'[{step}] Settle done.')
 
         self._send_next_pose()
+
+    # ------------------------------------------------------------------ #
+    # Debug: actual vs target pose
+    # ------------------------------------------------------------------ #
+
+    def _log_actual_pose(self, step: str | None):
+        target = self._active_target_pose
+        if target is None:
+            return
+
+        target_frame = target.header.frame_id or 'world'
+        tx = target.pose.position.x
+        ty = target.pose.position.y
+        tz = target.pose.position.z
+
+        try:
+            tf = self._tf_buffer.lookup_transform(
+                target_frame,
+                self.eef_link,
+                rclpy.time.Time(),
+            )
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
+                tf2_ros.ExtrapolationException) as e:
+            self.get_logger().warn(f'[{step}] TF lookup failed ({e}) — cannot log actual pose')
+            return
+
+        ax = tf.transform.translation.x
+        ay = tf.transform.translation.y
+        az = tf.transform.translation.z
+        dx = ax - tx
+        dy = ay - ty
+        dz = az - tz
+        dist = math.sqrt(dx * dx + dy * dy + dz * dz)
+
+        self.get_logger().info(
+            f'[{step}] ACTUAL  {self.eef_link} in {target_frame}: '
+            f'({ax:.4f}, {ay:.4f}, {az:.4f})'
+        )
+        self.get_logger().info(
+            f'[{step}] TARGET                         : '
+            f'({tx:.4f}, {ty:.4f}, {tz:.4f})'
+        )
+        self.get_logger().info(
+            f'[{step}] ERROR   dx={dx:+.4f}  dy={dy:+.4f}  dz={dz:+.4f}  '
+            f'dist={dist:.4f}m'
+        )
 
     # ------------------------------------------------------------------ #
     # MoveIt goal construction
