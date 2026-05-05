@@ -133,14 +133,19 @@ def generate_launch_description():
         )
     )
 
-    # Adding perception node
-    overhead_localizer = Node(
-        package='ur3e_gazebo',
-        executable='overhead_camera_localizer',
-        output='screen',
+    # Publish fixed transform for the overhead camera (standalone SDF model,
+    # not part of the URDF, so robot_state_publisher won't emit it).
+    # Pose taken directly from grocery_world.sdf: x=0.35 y=0 z=0.5 pitch=π/2.
+    overhead_camera_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        arguments=[
+            '--x', '0.35', '--y', '0.0', '--z', '0.5',
+            '--roll', '0.0', '--pitch', '1.5708', '--yaw', '0.0',
+            '--frame-id', 'world',
+            '--child-frame-id', 'overhead_camera_link',
+        ],
     )
-
-
 
     return LaunchDescription([
         gazebo,
@@ -151,5 +156,5 @@ def generate_launch_description():
         load_joint_state_broadcaster,
         load_joint_trajectory_controller,
         load_home_pose,
-        overhead_localizer,
+        overhead_camera_tf,
     ])

@@ -334,6 +334,12 @@ class OverheadCameraLocalizer(Node):
         The key field is msg.k — a 3x3 intrinsic matrix flattened to 9 values
         containing the focal lengths (fx, fy) and principal point (cx, cy).
         """
+        if self._latest_camera_info is None:
+            self.get_logger().info(
+                f'Camera info received: {msg.width}x{msg.height}  '
+                f'fx={msg.k[0]:.1f}  fy={msg.k[4]:.1f}  '
+                f'cx={msg.k[2]:.1f}  cy={msg.k[5]:.1f}'
+            )
         self._latest_camera_info = msg
     
     def _projection(self, timestamp):
@@ -354,24 +360,33 @@ class OverheadCameraLocalizer(Node):
         #   world frame — though since this camera is fixed, that transform
         #   is constant.
 
-        if self._latest_centroid is not None and self._depth is not None and self._latest_camera_info is not None:
-        
-            model = PinholeCameraModel()
-            model.fromCameraInfo(self._latest_camera_info)
-            center_x, center_y = self._latest_centroid[1], self._latest_centroid[0]
-            ray = model.projectPixelTo3dRay((center_x, center_y))
-            point_in_camera_frame = [r * self._depth for r in ray]
-            
-            if self._cached_transform is None:
-                self._cached_transform = self._lookup_camera_to_world()
+        if self._latest_centroid is None or self._depth is None or self._latest_camera_info is None:
+            self.get_logger().warn(
+                f'projection blocked — centroid={self._latest_centroid is not None}  '
+                f'depth={self._depth is not None}  '
+                f'camera_info={self._latest_camera_info is not None}',
+                throttle_duration_sec=2.0,
+            )
+            return
 
-            if self._cached_transform is not None:
-                point_stamped = PointStamped()
-                point_stamped.header.frame_id = 'overhead_camera_link'
-                point_stamped.header.stamp = timestamp
-                point_stamped.point = Point(x=point_in_camera_frame[0], y=point_in_camera_frame[1], z=point_in_camera_frame[2])
-                world_point = tf2_geometry_msgs.do_transform_point(point_stamped, self._cached_transform)
-                self._publish_world_frame(world_point)
+        model = PinholeCameraModel()
+        model.fromCameraInfo(self._latest_camera_info)
+        center_x, center_y = self._latest_centroid[1], self._latest_centroid[0]
+        ray = model.projectPixelTo3dRay((center_x, center_y))
+        point_in_camera_frame = [r * self._depth for r in ray]
+
+        if self._cached_transform is None:
+            self._cached_transform = self._lookup_camera_to_world()
+
+        if self._cached_transform is None:
+            return
+
+        point_stamped = PointStamped()
+        point_stamped.header.frame_id = 'overhead_camera_link'
+        point_stamped.header.stamp = timestamp
+        point_stamped.point = Point(x=point_in_camera_frame[0], y=point_in_camera_frame[1], z=point_in_camera_frame[2])
+        world_point = tf2_geometry_msgs.do_transform_point(point_stamped, self._cached_transform)
+        self._publish_world_frame(world_point)
 
     # ------------------------------------------------------------------ #
     #  TF2 TRANSFORM HELPER                                                #
@@ -400,13 +415,18 @@ class OverheadCameraLocalizer(Node):
             # world_point.point is now (x, y, z) in world frame
         """
         try:
-            return self._tf_buffer.lookup_transform(
+            transform = self._tf_buffer.lookup_transform(
                 'world',
                 'overhead_camera_link',
                 rclpy.time.Time(),
             )
-        except Exception:
-            # Transform not available yet — will resolve shortly after startup
+            self.get_logger().info('TF overhead_camera_link → world acquired.')
+            return transform
+        except Exception as e:
+            self.get_logger().warn(
+                f'TF lookup overhead_camera_link → world failed: {e}',
+                throttle_duration_sec=2.0,
+            )
             return None
 
     # ------------------------------------------------------------------ #
@@ -415,10 +435,15 @@ class OverheadCameraLocalizer(Node):
 
     def _publish_world_frame(self, world_point):
         """
-        Publishes the real world-frame PointStamped once the detection and transform 
+        Publishes the real world-frame PointStamped once the detection and transform
         pipeline above is complete.
         """
-      
+        self.get_logger().info(
+            f'Publishing apple location: '
+            f'x={world_point.point.x:.3f}  y={world_point.point.y:.3f}  z={world_point.point.z:.3f}  '
+            f'frame={world_point.header.frame_id}',
+            throttle_duration_sec=2.0,
+        )
         self._apple_location_pub.publish(world_point)
 
         marker = Marker()
