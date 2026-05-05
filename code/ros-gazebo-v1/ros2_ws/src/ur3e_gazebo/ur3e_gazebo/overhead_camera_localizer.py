@@ -462,18 +462,22 @@ class OverheadCameraLocalizer(Node):
 
         marker = Marker()
         marker.header.frame_id = 'world'
+        marker.header.stamp = world_point.header.stamp
         marker.ns = 'apple_detection'
         marker.id = 0
         marker.action = Marker.ADD
         marker.type = Marker.SPHERE
+        marker.pose.position.x = world_point.point.x
+        marker.pose.position.y = world_point.point.y
+        marker.pose.position.z = world_point.point.z
+        marker.pose.orientation.w = 1.0
         marker.scale.x = 0.1
         marker.scale.y = 0.1
         marker.scale.z = 0.1
-        marker.color.a = 1.0 # Alpha
-        marker.color.r = 1.0 # Color
+        marker.color.a = 1.0
+        marker.color.r = 1.0
         marker.color.g = 0.0
         marker.color.b = 0.0
-        #marker.location=Duration(sec=0)
 
         self._apple_marker_pub.publish(marker)
 
