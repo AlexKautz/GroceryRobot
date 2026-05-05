@@ -87,6 +87,7 @@ class MoveItPickFromCamera(Node):
         self.declare_parameter('gripper_open', 0.05)
         self.declare_parameter('gripper_closed', -0.006)
         self.declare_parameter('gripper_move_time', 1.0)
+        self.declare_parameter('step_settle_time', 4.0)
 
         self.apple_topic = self.get_parameter('apple_topic').value
         self.move_group_action = self.get_parameter('move_group_action').value
@@ -124,6 +125,7 @@ class MoveItPickFromCamera(Node):
         self.gripper_open = self.get_parameter('gripper_open').value
         self.gripper_closed = self.get_parameter('gripper_closed').value
         self.gripper_move_time = self.get_parameter('gripper_move_time').value
+        self.step_settle_time = self.get_parameter('step_settle_time').value
 
         # ---------------- ROS interfaces ----------------
 
@@ -150,6 +152,7 @@ class MoveItPickFromCamera(Node):
         self._sequence = []
         self._active_step_name = None
         self._step_start_time: float = 0.0
+        self._retry_after: float = 0.0   # wall-clock time before next pick is allowed
 
         self.get_logger().info('=' * 60)
         self.get_logger().info('moveit_pick_from_camera started')
@@ -172,6 +175,7 @@ class MoveItPickFromCamera(Node):
         self.get_logger().info(f'  gripper_open:         {self.gripper_open}m')
         self.get_logger().info(f'  gripper_closed:       {self.gripper_closed}m')
         self.get_logger().info(f'  gripper_move_time:    {self.gripper_move_time}s')
+        self.get_logger().info(f'  step_settle_time:     {self.step_settle_time}s')
         self.get_logger().info(f'  tool_orientation:     qx={self.tool_orientation.x} qy={self.tool_orientation.y} qz={self.tool_orientation.z} qw={self.tool_orientation.w}')
         self.get_logger().info('=' * 60)
         self.get_logger().info('Waiting for apple detection...')
@@ -188,6 +192,15 @@ class MoveItPickFromCamera(Node):
 
         if self._busy:
             self.get_logger().debug('Apple detection received but already busy — ignoring.')
+            return
+
+        now = time.monotonic()
+        if now < self._retry_after:
+            self.get_logger().info(
+                f'Apple detection received but in cooldown — '
+                f'{self._retry_after - now:.1f}s remaining.',
+                throttle_duration_sec=2.0,
+            )
             return
 
         self._busy = True
@@ -345,6 +358,7 @@ class MoveItPickFromCamera(Node):
                 f'[{step_name}] TIMEOUT: MoveGroup action server not available at {self.move_group_action} '
                 f'— is "ros2 launch ur3e_moveit_config move_group.launch.py" running?'
             )
+            self._retry_after = time.monotonic() + 5.0
             self._busy = False
             return
 
@@ -364,6 +378,7 @@ class MoveItPickFromCamera(Node):
                 f'Check that planning_group="{self.planning_group}" is correct '
                 f'and that MoveIt has a valid robot state.'
             )
+            self._retry_after = time.monotonic() + 5.0
             self._busy = False
             return
 
@@ -387,8 +402,9 @@ class MoveItPickFromCamera(Node):
                 f'error_code={error_code} ({error_name})'
             )
             self.get_logger().error(
-                f'[{step}] Aborting sequence. Fix the issue and wait for next apple detection.'
+                f'[{step}] Aborting sequence. Retrying in 5s.'
             )
+            self._retry_after = time.monotonic() + 5.0
             self._busy = False
             return
 
@@ -410,6 +426,10 @@ class MoveItPickFromCamera(Node):
             self.get_logger().info(f'[{step}] Sleeping {self.gripper_move_time}s for gripper to open...')
             time.sleep(self.gripper_move_time)
             self.get_logger().info(f'[{step}] Gripper open wait done.')
+
+        self.get_logger().info(f'[{step}] Settling for {self.step_settle_time}s before next move...')
+        time.sleep(self.step_settle_time)
+        self.get_logger().info(f'[{step}] Settle done.')
 
         self._send_next_pose()
 

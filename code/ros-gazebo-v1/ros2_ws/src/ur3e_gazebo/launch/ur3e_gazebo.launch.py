@@ -135,13 +135,17 @@ def generate_launch_description():
 
     # Publish fixed transform for the overhead camera (standalone SDF model,
     # not part of the URDF, so robot_state_publisher won't emit it).
-    # Pose taken directly from grocery_world.sdf: x=0.35 y=0 z=0.5 pitch=π/2.
+    # Translation matches grocery_world.sdf: x=0.35 y=0 z=0.5.
+    # Rotation: roll=π yaw=π/2 aligns the optical frame (Z=depth pointing down)
+    # so that depth maps to world -Z.  This gives:
+    #   world = (0.35 + image_row_offset, image_col_offset, 0.5 - depth)
+    # which matches the docstring: "image X → world Y, image Y → world X".
     overhead_camera_tf = Node(
         package='tf2_ros',
         executable='static_transform_publisher',
         arguments=[
             '--x', '0.35', '--y', '0.0', '--z', '0.5',
-            '--roll', '0.0', '--pitch', '1.5708', '--yaw', '0.0',
+            '--roll', '3.14159', '--pitch', '0.0', '--yaw', '1.5708',
             '--frame-id', 'world',
             '--child-frame-id', 'overhead_camera_link',
         ],

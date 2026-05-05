@@ -8,7 +8,7 @@ def generate_launch_description():
             package='ur3e_gazebo',
             executable='moveit_pick_from_camera',
             output='screen',
-            parameters=[{
+            parameters=[{'use_sim_time': True,
                 'apple_topic': '/overhead_camera/apple_location',
                 'move_group_action': '/move_action',
                 'planning_group': 'ur_manipulator',

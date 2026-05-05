@@ -375,6 +375,14 @@ class OverheadCameraLocalizer(Node):
         ray = model.projectPixelTo3dRay((center_x, center_y))
         point_in_camera_frame = [r * self._depth for r in ray]
 
+        self.get_logger().info(
+            f'[projection] pixel=({center_x:.1f}, {center_y:.1f})  '
+            f'depth={self._depth:.4f}m  '
+            f'ray=({ray[0]:.4f}, {ray[1]:.4f}, {ray[2]:.4f})  '
+            f'cam_point=({point_in_camera_frame[0]:.4f}, {point_in_camera_frame[1]:.4f}, {point_in_camera_frame[2]:.4f})',
+            throttle_duration_sec=2.0,
+        )
+
         if self._cached_transform is None:
             self._cached_transform = self._lookup_camera_to_world()
 
@@ -420,7 +428,13 @@ class OverheadCameraLocalizer(Node):
                 'overhead_camera_link',
                 rclpy.time.Time(),
             )
-            self.get_logger().info('TF overhead_camera_link → world acquired.')
+            t = transform.transform.translation
+            r = transform.transform.rotation
+            self.get_logger().info(
+                f'TF overhead_camera_link → world acquired: '
+                f'translation=({t.x:.4f}, {t.y:.4f}, {t.z:.4f})  '
+                f'rotation quat=({r.x:.4f}, {r.y:.4f}, {r.z:.4f}, {r.w:.4f})'
+            )
             return transform
         except Exception as e:
             self.get_logger().warn(
