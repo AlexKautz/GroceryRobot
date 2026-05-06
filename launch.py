@@ -136,6 +136,7 @@ NODES: list[NodeEntry] = [
     NodeEntry("Image Viewer",              "QT_QPA_PLATFORM=xcb ros2 run rqt_image_view rqt_image_view /overhead_camera/annotated_image"),
     NodeEntry("MoveIt Pick from Camera",   "ros2 launch ur3e_gazebo moveit_pick_from_camera.launch.py", mode="manual"),
     NodeEntry("MoveIt",                    "ros2 launch ur3e_moveit_config move_group.launch.py",         mode="manual"),
+    NodeEntry("Apple Detection Test",      "ros2 run ur3e_gazebo test_apple_detection.py",         mode="manual"),
 ]
 
 
