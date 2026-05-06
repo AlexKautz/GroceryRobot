@@ -228,7 +228,7 @@ class OverheadCameraLocalizer(Node):
         pixels = np.frombuffer(msg.data, dtype=np.uint8).reshape(
             msg.height, msg.width, 3
         )
-        pixels = cv2.flip(pixels, -1) # flip image before computing centroid
+        #pixels = cv2.flip(pixels, -1) # flip image before computing centroid
         mean_r = float(np.mean(pixels[:, :, 0]))
         mean_g = float(np.mean(pixels[:, :, 1]))
         mean_b = float(np.mean(pixels[:, :, 2]))
@@ -374,8 +374,8 @@ class OverheadCameraLocalizer(Node):
         model = PinholeCameraModel()
         model.fromCameraInfo(self._latest_camera_info)
         center_x, center_y = self._latest_centroid[1], self._latest_centroid[0]
-        #center_x = self._latest_camera_info.width - 1 - center_x
-        #center_y = self._latest_camera_info.height - 1 - center_y
+        center_x = self._latest_camera_info.width - 1 - center_x
+        center_y = self._latest_camera_info.height - 1 - center_y
 
         ray = model.projectPixelTo3dRay((center_x, center_y))
         point_in_camera_frame = [r * self._depth for r in ray]

@@ -1,7 +1,7 @@
 Apple Detection Test Summary
 ==================================================
 
-Detection rate: 4/5
+Detection rate: 2/5
 
 Position 1
   True world:      (0.350, 0.000, 0.065)
@@ -14,8 +14,7 @@ Position 2
 
 Position 3
   True world:      (0.300, -0.100, 0.065)
-  Estimated world: (0.297, 0.106, 0.040)
-  3D error:        0.2077 m
+  Result:          NOT DETECTED
 
 Position 4
   True world:      (0.400, 0.100, 0.065)
@@ -24,6 +23,5 @@ Position 4
 
 Position 5
   True world:      (0.400, -0.100, 0.065)
-  Estimated world: (0.403, 0.106, 0.040)
-  3D error:        0.2077 m
+  Result:          NOT DETECTED
 

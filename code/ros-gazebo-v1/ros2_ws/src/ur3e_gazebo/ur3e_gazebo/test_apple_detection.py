@@ -29,7 +29,7 @@ TEST_POSITIONS = [
 
 ]
 
-OUTPUT_DIR = os.path.expanduser("~/Code/ROS/GroceryRobot/apple_detection_test_flip")
+OUTPUT_DIR = os.path.expanduser("~/Code/ROS/GroceryRobot/apple_detection_test")
 
 
 class AppleDetectionTester(Node):
@@ -126,6 +126,7 @@ class AppleDetectionTester(Node):
 
     def _save_image(self, position_index, x, y, z):
         detected = self._latest_location is not None
+      
         est_x = self._latest_location.point.x if detected else None
         est_y = self._latest_location.point.y if detected else None
         est_z = self._latest_location.point.z if detected else None
@@ -156,7 +157,7 @@ class AppleDetectionTester(Node):
         cv2.putText(cv_img_bgr, label,  (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         cv2.putText(cv_img_bgr, status, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255) if not detected else (0, 255, 0), 2)
 
-        filename = os.path.join(OUTPUT_DIR, f"flip_pos{position_index:02d}_x{x:.2f}_y{y:.2f}.png")
+        filename = os.path.join(OUTPUT_DIR, f"pos{position_index:02d}_x{x:.2f}_y{y:.2f}.png")
         cv2.imwrite(filename, cv_img_bgr)
         self.get_logger().info(f"Saved: {filename}")
 
@@ -170,7 +171,8 @@ class AppleDetectionTester(Node):
 
             # Capture timestamp before moving
             prev_img_stamp = self._latest_image_stamp
-            
+            prev_loc_stamp = self._latest_location_stamp
+
 
             self.get_logger().info(
                 f"\n=== Test {i}/5: moving apple to ({x}, {y}, {z}) ==="
@@ -181,18 +183,17 @@ class AppleDetectionTester(Node):
                 continue
 
             time.sleep(1.0) 
-            prev_loc_stamp = self._latest_location_stamp
-
+            
             got_data = self._wait_for_fresh_data(prev_img_stamp, prev_loc_stamp, timeout=5.0)
 
             if not got_data:
                 self.get_logger().warn(f"No new data after move {i}")
 
             self._save_image(i, x, y, z)
-        self._write_summary()
+        #self._write_summary()
     
     def _write_summary(self):
-        path = os.path.join(OUTPUT_DIR, "flip_test_summary.txt")
+        path = os.path.join(OUTPUT_DIR, "test_summary.txt")
         with open(path, "w") as f:
             f.write("Apple Detection Test Summary\n")
             f.write("=" * 50 + "\n\n")
