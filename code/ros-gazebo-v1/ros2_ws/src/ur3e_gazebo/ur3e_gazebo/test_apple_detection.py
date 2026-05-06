@@ -62,9 +62,12 @@ class AppleDetectionTester(Node):
         )
         self._latest_location = None
 
+        self._latest_image = None
+        self._latest_image_stamp = None
+
     def _image_callback(self, msg: Image):
         self._latest_image = msg
-        self._image_updated = True
+        self._latest_image_stamp = msg.header.stamp
 
     
 
@@ -84,13 +87,24 @@ class AppleDetectionTester(Node):
         self.get_logger().info(f"Apple moved to ({x}, {y}, {z})")
         return True
 
-    def _wait_for_fresh_image(self, timeout=5.0):
-        """Block until a new annotated image arrives after the apple moved."""
-        self._image_updated = False
+    def _wait_for_fresh_image(self, prev_stamp, timeout=5.0):
         deadline = time.time() + timeout
-        while not self._image_updated and time.time() < deadline:
+
+        while time.time() < deadline:
             rclpy.spin_once(self, timeout_sec=0.1)
-        return self._image_updated
+
+            if self._latest_image_stamp is None:
+                continue
+
+            # Wait until we get a strictly newer frame
+            if prev_stamp is None or (
+                self._latest_image_stamp.sec > prev_stamp.sec or
+                (self._latest_image_stamp.sec == prev_stamp.sec and
+                self._latest_image_stamp.nanosec > prev_stamp.nanosec)
+            ):
+                return True
+
+        return False
 
     def _save_image(self, position_index, x, y, z):
         detected = self._latest_location is not None
@@ -135,29 +149,26 @@ class AppleDetectionTester(Node):
 
         for i, (x, y, z) in enumerate(TEST_POSITIONS, start=1):
             self._latest_location = None
+
+            # Capture timestamp before moving
+            prev_stamp = self._latest_image_stamp
+
             self.get_logger().info(
                 f"\n=== Test {i}/5: moving apple to ({x}, {y}, {z}) ==="
             )
 
             moved = self._move_apple(x, y, z)
             if not moved:
-                self.get_logger().error(f"Failed to move apple to position {i}")
                 continue
 
-            # Wait for physics to settle + localizer to process new frame
-            time.sleep(2.5)
+            time.sleep(1.0) 
 
-            got_image = self._wait_for_fresh_image(timeout=5.0)
+            got_image = self._wait_for_fresh_image(prev_stamp, timeout=5.0)
+
             if not got_image:
-                self.get_logger().warn(f"Timed out waiting for image at position {i}")
+                self.get_logger().warn(f"No new image after move {i}")
 
             self._save_image(i, x, y, z)
-
-        self.get_logger().info(
-            f"\nDone! All images saved to: {OUTPUT_DIR}"
-        )
-        self._write_summary()
-
     def _write_summary(self):
         path = os.path.join(OUTPUT_DIR, "test_summary.txt")
         with open(path, "w") as f:
