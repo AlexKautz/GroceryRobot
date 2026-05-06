@@ -228,7 +228,7 @@ class OverheadCameraLocalizer(Node):
         pixels = np.frombuffer(msg.data, dtype=np.uint8).reshape(
             msg.height, msg.width, 3
         )
-       # pixels = cv2.flip(pixels, -1) # flip image before computing centroid
+        #pixels = cv2.flip(pixels, -1) # flip image before computing centroid
         mean_r = float(np.mean(pixels[:, :, 0]))
         mean_g = float(np.mean(pixels[:, :, 1]))
         mean_b = float(np.mean(pixels[:, :, 2]))
@@ -257,8 +257,8 @@ class OverheadCameraLocalizer(Node):
             for box in boxes:
                 if self.model.names[int(box.cls)] in ['sports ball']:
                     x1, y1, x2, y2 = box.xyxy[0]      # bounding box corners [x1, y1, x2, y2]
-                    center_x = -int((x1 + x2) / 2)
-                    center_y = -int((y1 + y2) / 2)
+                    center_x = int((x1 + x2) / 2)
+                    center_y = int((y1 + y2) / 2)
                     cv2.rectangle(pixels, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
         
 
@@ -267,6 +267,7 @@ class OverheadCameraLocalizer(Node):
             self._latest_centroid = np.array([center_y, center_x])
         else:
             self._latest_centroid = None
+            self._depth = None
 
         # convert pixels to cv2 image
         cv_img = self.bridge.cv2_to_imgmsg(pixels, 'rgb8')
@@ -373,6 +374,9 @@ class OverheadCameraLocalizer(Node):
         model = PinholeCameraModel()
         model.fromCameraInfo(self._latest_camera_info)
         center_x, center_y = self._latest_centroid[1], self._latest_centroid[0]
+        center_x = self._latest_camera_info.width - 1 - center_x
+        center_y = self._latest_camera_info.height - 1 - center_y
+
         ray = model.projectPixelTo3dRay((center_x, center_y))
         point_in_camera_frame = [r * self._depth for r in ray]
 
