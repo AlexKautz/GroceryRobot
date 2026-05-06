@@ -1,6 +1,6 @@
 Apple Detection Test Summary
 ==================================================
-
+world: <pose>0.35 0 0.5 3.1416 1.5708 0</pose>
 Detection rate: 2/5
 
 Position 1
