@@ -14,22 +14,22 @@ import rclpy
 import subprocess
 from rclpy.node import Node
 from sensor_msgs.msg import Image
-from geometry_msgs.msg import Pose
-from gazebo_msgs.srv import SetEntityState
-from gazebo_msgs.msg import EntityState
+from geometry_msgs.msg import PointStamped
+
 from cv_bridge import CvBridge
 import cv2
 
-# 5 test positions: (x, y, z) in world frame, all on the table surface
+# 6 test positions: (x, y, z) in world frame, all on the table surface
 TEST_POSITIONS = [
     (0.35,  0.0,  0.065),   # 1 — center
-    (0.35,  0.6,  0.065),   # 2 — left edge
-    (0.35, -0.6,  0.065),   # 3 — right edge
-    (0.55,  0.0,  0.065),   # 4 — far from arm
-    (0.20,  0.3,  0.065),   # 5 — near-left
+    (0.3,  0.1,  0.065),   # 2 — left edge
+    (0.3, -0.1,  0.065),   # 3 — right edge
+    (0.4,  0.1,  0.065),   # 4 — far from arm
+    (0.4,  -0.1,  0.065),   # 5 — near-left
+
 ]
 
-OUTPUT_DIR = os.path.expanduser("~/apple_detection_test")
+OUTPUT_DIR = os.path.expanduser("~/Code/ROS/GroceryRobot/apple_detection_test")
 
 
 class AppleDetectionTester(Node):
@@ -41,8 +41,8 @@ class AppleDetectionTester(Node):
         self.bridge = CvBridge()
         self._latest_image = None
         self._image_updated = False
+        self._detection_results = []
 
-        # Subscribe to the annotated image your localizer publishes
         self.create_subscription(
             Image,
             "/overhead_camera/annotated_image",
@@ -50,12 +50,17 @@ class AppleDetectionTester(Node):
             10,
         )
 
-        # Service client to teleport the apple in Gazebo
-        self._set_state_client = self.create_client(
-            SetEntityState, "/set_entity_state"
-        )
-
         self.get_logger().info(f"Saving images to: {OUTPUT_DIR}")
+
+        
+
+        self.create_subscription(
+            PointStamped,
+            "/overhead_camera/apple_location",
+            self._location_callback,
+            10,
+        )
+        self._latest_location = None
 
     def _image_callback(self, msg: Image):
         self._latest_image = msg
@@ -88,22 +93,38 @@ class AppleDetectionTester(Node):
         return self._image_updated
 
     def _save_image(self, position_index, x, y, z):
+        detected = self._latest_location is not None
+        est_x = self._latest_location.point.x if detected else None
+        est_y = self._latest_location.point.y if detected else None
+        est_z = self._latest_location.point.z if detected else None
+
+        error = None
+        if detected:
+            error = ((est_x - x)**2 + (est_y - y)**2 + (est_z - z)**2) ** 0.5
+
+        self._detection_results.append({
+            'pos': position_index,
+            'true': (x, y, z),
+            'estimated': (est_x, est_y, est_z),
+            'detected': detected,
+            'error_m': error,
+        })
+
         if self._latest_image is None:
-            self.get_logger().warn(f"No image received for position {position_index}")
             return
 
         cv_img = self.bridge.imgmsg_to_cv2(self._latest_image, "rgb8")
         cv_img_bgr = cv2.cvtColor(cv_img, cv2.COLOR_RGB2BGR)
 
-        # Overlay position label on the image
         label = f"Pos {position_index}: ({x:.2f}, {y:.2f}, {z:.2f})"
-        cv2.putText(cv_img_bgr, label, (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        status = f"{'DETECTED' if detected else 'MISSED'}"
+        if error is not None:
+            status += f"  err={error:.3f}m"
 
-        filename = os.path.join(
-            OUTPUT_DIR,
-            f"pos{position_index:02d}_x{x:.2f}_y{y:.2f}_z{z:.2f}.png"
-        )
+        cv2.putText(cv_img_bgr, label,  (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        cv2.putText(cv_img_bgr, status, (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255) if not detected else (0, 255, 0), 2)
+
+        filename = os.path.join(OUTPUT_DIR, f"pos{position_index:02d}_x{x:.2f}_y{y:.2f}.png")
         cv2.imwrite(filename, cv_img_bgr)
         self.get_logger().info(f"Saved: {filename}")
 
@@ -113,6 +134,7 @@ class AppleDetectionTester(Node):
         time.sleep(3.0)
 
         for i, (x, y, z) in enumerate(TEST_POSITIONS, start=1):
+            self._latest_location = None
             self.get_logger().info(
                 f"\n=== Test {i}/5: moving apple to ({x}, {y}, {z}) ==="
             )
@@ -123,7 +145,7 @@ class AppleDetectionTester(Node):
                 continue
 
             # Wait for physics to settle + localizer to process new frame
-            time.sleep(1.5)
+            time.sleep(2.5)
 
             got_image = self._wait_for_fresh_image(timeout=5.0)
             if not got_image:
@@ -137,15 +159,29 @@ class AppleDetectionTester(Node):
         self._write_summary()
 
     def _write_summary(self):
-        """Write a plain-text summary of the test positions."""
         path = os.path.join(OUTPUT_DIR, "test_summary.txt")
         with open(path, "w") as f:
             f.write("Apple Detection Test Summary\n")
-            f.write("=" * 40 + "\n\n")
-            for i, (x, y, z) in enumerate(TEST_POSITIONS, start=1):
-                fname = f"pos{i:02d}_x{x:.2f}_y{y:.2f}_z{z:.2f}.png"
-                f.write(f"Position {i}: world ({x:.3f}, {y:.3f}, {z:.3f})  →  {fname}\n")
+            f.write("=" * 50 + "\n\n")
+            detected_count = sum(1 for r in self._detection_results if r['detected'])
+            f.write(f"Detection rate: {detected_count}/{len(self._detection_results)}\n\n")
+
+            for r in self._detection_results:
+                tx, ty, tz = r['true']
+                f.write(f"Position {r['pos']}\n")
+                f.write(f"  True world:      ({tx:.3f}, {ty:.3f}, {tz:.3f})\n")
+                if r['detected']:
+                    ex, ey, ez = r['estimated']
+                    f.write(f"  Estimated world: ({ex:.3f}, {ey:.3f}, {ez:.3f})\n")
+                    f.write(f"  3D error:        {r['error_m']:.4f} m\n")
+                else:
+                    f.write(f"  Result:          NOT DETECTED\n")
+                f.write("\n")
+
         self.get_logger().info(f"Summary written to: {path}")
+
+    def _location_callback(self, msg: PointStamped):
+        self._latest_location = msg
 
 
 def main(args=None):
