@@ -37,6 +37,7 @@ setup(
             'joint_control_panel = ur3e_gazebo.joint_control_panel:main',
             'apple_picker = ur3e_gazebo.apple_picker:main',
             'moveit_pick_from_camera = ur3e_gazebo.moveit_pick_from_camera:main',
+            'test_apple_detection = ur3e_gazebo.test_apple_detection:main',
         ],
     },
 )
