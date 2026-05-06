@@ -258,7 +258,7 @@
     <model name='overhead_camera'>
       <static>true</static>
       <!-- x=0.35 centers over the table work area; z=1.2 gives a wide field of view -->
-      <pose>0.35 0 0.5 0 1.5708 0</pose>
+      <pose>0.35 0 0.5 3.1416 1.5708 0</pose>
       <link name='overhead_camera_link'>
         <!-- Small box representing the camera body -->
         <visual name='visual'>

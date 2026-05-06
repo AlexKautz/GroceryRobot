@@ -61,8 +61,8 @@ class MoveItPickFromCamera(Node):
         self.declare_parameter('acceleration_scaling', 0.05)
 
         # Goal tolerances
-        self.declare_parameter('position_tolerance', 0.03)
-        self.declare_parameter('orientation_tolerance', 0.05)
+        self.declare_parameter('position_tolerance', 0.01)
+        self.declare_parameter('orientation_tolerance', 0.02)
 
         # Pick offsets, in meters
         self.declare_parameter('pre_grasp_z_offset', 0.20)
