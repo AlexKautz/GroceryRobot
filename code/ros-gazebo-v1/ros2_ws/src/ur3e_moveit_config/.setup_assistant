@@ -1,0 +1,10 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: ur3e_gazebo
+    relative_path: urdf/ur3e_gz.urdf.xacro
+  srdf:
+    relative_path: config/ur3e.srdf
+  package_settings:
+    author_name: ""
+    author_email: ""
+    generated_timestamp: 1777838359

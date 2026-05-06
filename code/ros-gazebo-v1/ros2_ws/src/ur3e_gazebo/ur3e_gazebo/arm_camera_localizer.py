@@ -130,6 +130,8 @@ class ArmCameraLocalizer(Node):
         self.model = YOLO("yolov8n.pt")
         self.model.to('cpu')
 
+        self.bridge = CvBridge()
+
         # --- Subscriptions ---
 
         # RGB image from the wrist camera — the primary input for detection
@@ -297,7 +299,7 @@ class ArmCameraLocalizer(Node):
         #   Verify the value is finite before using it downstream.
         if self._latest_centroid is not None:
             row, col = int(self._latest_centroid[0]), int(self._latest_centroid[1])
-            depth_value = float(depth_pixels[row, col])
+            depth_value = float(depth_pixels[self._latest_centroid])
             if np.isfinite(depth_value):
                 self._depth = depth_value
 
