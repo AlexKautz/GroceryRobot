@@ -11,6 +11,7 @@ Run AFTER the simulation and overhead_camera_localizer are already up:
 import os
 import time
 import rclpy
+import subprocess
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Pose
@@ -60,24 +61,23 @@ class AppleDetectionTester(Node):
         self._latest_image = msg
         self._image_updated = True
 
+    
+
     def _move_apple(self, x, y, z):
-        """Teleport the apple model to (x, y, z) via Gazebo service."""
-        req = SetEntityState.Request()
-        req.state = EntityState()
-        req.state.name = "apple"
-        req.state.pose = Pose()
-        req.state.pose.position.x = x
-        req.state.pose.position.y = y
-        req.state.pose.position.z = z
-        req.state.pose.orientation.w = 1.0
-
-        if not self._set_state_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("SetEntityState service not available!")
+        req = f'name: "apple" position: {{x: {x} y: {y} z: {z}}} orientation: {{w: 1.0}}'
+        cmd = [
+            "gz", "service", "-s", "/world/empty/set_pose/blocking",
+            "--reqtype", "gz.msgs.Pose",
+            "--reptype", "gz.msgs.Boolean",
+            "--timeout", "2000",
+            "--req", req
+        ]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode != 0:
+            self.get_logger().error(f"gz service failed: {result.stderr}")
             return False
-
-        future = self._set_state_client.call_async(req)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
-        return future.result() is not None
+        self.get_logger().info(f"Apple moved to ({x}, {y}, {z})")
+        return True
 
     def _wait_for_fresh_image(self, timeout=5.0):
         """Block until a new annotated image arrives after the apple moved."""
