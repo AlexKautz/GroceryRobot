@@ -11,6 +11,7 @@ WS="$REPO/code/ros-gazebo-v1/ros2_ws"
 
 # 1. Source base ROS first — setup.sh checks $ROS_DISTRO
 source /opt/ros/kilted/setup.bash
+export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
 
 # 2. Stop any running simulation
 bash "$REPO/teardown.sh"
