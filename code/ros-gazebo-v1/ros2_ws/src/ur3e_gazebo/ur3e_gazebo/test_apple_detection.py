@@ -61,6 +61,7 @@ class AppleDetectionTester(Node):
             10,
         )
         self._latest_location = None
+        self._latest_location_stamp = None
 
         self._latest_image = None
         self._latest_image_stamp = None
@@ -87,7 +88,7 @@ class AppleDetectionTester(Node):
         self.get_logger().info(f"Apple moved to ({x}, {y}, {z})")
         return True
 
-    def _wait_for_fresh_image(self, prev_stamp, timeout=5.0):
+    def _wait_for_fresh_data(self, prev_img_stamp, prev_loc_stamp, timeout=5.0):
         deadline = time.time() + timeout
 
         while time.time() < deadline:
@@ -97,12 +98,29 @@ class AppleDetectionTester(Node):
                 continue
 
             # Wait until we get a strictly newer frame
-            if prev_stamp is None or (
-                self._latest_image_stamp.sec > prev_stamp.sec or
-                (self._latest_image_stamp.sec == prev_stamp.sec and
-                self._latest_image_stamp.nanosec > prev_stamp.nanosec)
-            ):
+            img_new = (prev_img_stamp is None or (
+                self._latest_image_stamp.sec > prev_img_stamp.sec or
+                (self._latest_image_stamp.sec == prev_img_stamp.sec and
+                self._latest_image_stamp.nanosec > prev_img_stamp.nanosec)
+            ))
+
+            if not img_new:
+                continue
+            
+            if self._latest_location_stamp is None:
+                continue
+
+            # Wait until we get a strictly newer frame
+            loc_new = (prev_loc_stamp is None or (
+                self._latest_location_stamp.sec > prev_loc_stamp.sec or
+                (self._latest_location_stamp.sec == prev_loc_stamp.sec and
+                self._latest_location_stamp.nanosec > prev_loc_stamp.nanosec)
+            ))
+
+            if img_new and loc_new:
                 return True
+            
+
 
         return False
 
@@ -151,7 +169,8 @@ class AppleDetectionTester(Node):
             self._latest_location = None
 
             # Capture timestamp before moving
-            prev_stamp = self._latest_image_stamp
+            prev_img_stamp = self._latest_image_stamp
+            prev_loc_stamp = self._latest_location_stamp
 
             self.get_logger().info(
                 f"\n=== Test {i}/5: moving apple to ({x}, {y}, {z}) ==="
@@ -163,12 +182,14 @@ class AppleDetectionTester(Node):
 
             time.sleep(1.0) 
 
-            got_image = self._wait_for_fresh_image(prev_stamp, timeout=5.0)
+            got_data = self._wait_for_fresh_data(prev_img_stamp, prev_loc_stamp, timeout=5.0)
 
-            if not got_image:
-                self.get_logger().warn(f"No new image after move {i}")
+            if not got_data:
+                self.get_logger().warn(f"No new data after move {i}")
 
             self._save_image(i, x, y, z)
+        self._write_summary()
+    
     def _write_summary(self):
         path = os.path.join(OUTPUT_DIR, "test_summary.txt")
         with open(path, "w") as f:
@@ -193,6 +214,7 @@ class AppleDetectionTester(Node):
 
     def _location_callback(self, msg: PointStamped):
         self._latest_location = msg
+        self._latest_location_stamp = msg.header.stamp
 
 
 def main(args=None):
