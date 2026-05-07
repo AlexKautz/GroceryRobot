@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import time
 from copy import deepcopy
 
@@ -27,6 +28,18 @@ from moveit_msgs.msg import (
 
 # Map MoveItErrorCodes.val integers to human-readable names for logging.
 _MOVEIT_ERROR_NAMES = {v: k for k, v in vars(MoveItErrorCodes).items() if isinstance(v, int)}
+
+# Home pose joint angles — matches home_pose.py
+_HOME_JOINTS = {
+    'shoulder_pan_joint':  0.0,
+    'shoulder_lift_joint': -1.57,
+    'elbow_joint':          1.57,
+    'wrist_1_joint':       -1.57,
+    'wrist_2_joint':        0.0,
+    'wrist_3_joint':        0.0,
+    'left_finger_joint':    0.0,
+    'right_finger_joint':   0.0,
+}
 
 
 class MoveItPickFromCamera(Node):
@@ -93,6 +106,12 @@ class MoveItPickFromCamera(Node):
         self.declare_parameter('gripper_move_time', 1.0)
         self.declare_parameter('step_settle_time', 4.0)
 
+        # Multi-run control
+        self.declare_parameter('go_home_before_pick', False)
+        self.declare_parameter('go_home_after_pick', False)
+        self.declare_parameter('home_move_time', 3.0)
+        self.declare_parameter('exit_on_complete', False)
+
         self.apple_topic = self.get_parameter('apple_topic').value
         self.move_group_action = self.get_parameter('move_group_action').value
         self.planning_group = self.get_parameter('planning_group').value
@@ -130,6 +149,12 @@ class MoveItPickFromCamera(Node):
         self.gripper_closed = self.get_parameter('gripper_closed').value
         self.gripper_move_time = self.get_parameter('gripper_move_time').value
         self.step_settle_time = self.get_parameter('step_settle_time').value
+
+        self.go_home_before_pick = self.get_parameter('go_home_before_pick').value
+        self.go_home_after_pick = self.get_parameter('go_home_after_pick').value
+        self.home_move_time = self.get_parameter('home_move_time').value
+        self.exit_on_complete = self.get_parameter('exit_on_complete').value
+        self._exit_code = 0
 
         # ---------------- ROS interfaces ----------------
 
@@ -185,6 +210,12 @@ class MoveItPickFromCamera(Node):
         self.get_logger().info(f'  gripper_move_time:    {self.gripper_move_time}s')
         self.get_logger().info(f'  step_settle_time:     {self.step_settle_time}s')
         self.get_logger().info(f'  tool_orientation:     qx={self.tool_orientation.x} qy={self.tool_orientation.y} qz={self.tool_orientation.z} qw={self.tool_orientation.w}')
+        self.get_logger().info(f'  go_home_before_pick:  {self.go_home_before_pick}')
+        self.get_logger().info(f'  go_home_after_pick:   {self.go_home_after_pick}')
+        self.get_logger().info(f'  home_move_time:       {self.home_move_time}s')
+        self.get_logger().info(f'  exit_on_complete:     {self.exit_on_complete}')
+        self.get_logger().info(f'  position_tolerance:   {self.position_tolerance}m')
+        self.get_logger().info(f'  orientation_tolerance:{self.orientation_tolerance}rad')
         self.get_logger().info('=' * 60)
         self.get_logger().info('Waiting for apple detection...')
 
@@ -215,6 +246,13 @@ class MoveItPickFromCamera(Node):
 
         self.get_logger().info('-' * 60)
         self.get_logger().info('APPLE DETECTED — starting pick sequence')
+        self.get_logger().info(f'  position_tolerance={self.position_tolerance}m  orientation_tolerance={self.orientation_tolerance}rad')
+
+        if self.go_home_before_pick:
+            self.get_logger().info(f'go_home_before_pick: sending home trajectory, waiting {self.home_move_time}s...')
+            self._send_home_trajectory()
+            time.sleep(self.home_move_time)
+            self.get_logger().info('Home reached — proceeding with pick.')
         self.get_logger().info(
             f'  frame_id: [{msg.header.frame_id}]  '
             f'x={msg.point.x:.4f}  y={msg.point.y:.4f}  z={msg.point.z:.4f}'
@@ -342,7 +380,18 @@ class MoveItPickFromCamera(Node):
     def _send_next_pose(self):
         if len(self._sequence) == 0:
             self.get_logger().info('=' * 60)
-            self.get_logger().info('Pick sequence COMPLETE — ready for next detection.')
+            self.get_logger().info('Pick sequence COMPLETE')
+            if self.go_home_after_pick:
+                self.get_logger().info(f'go_home_after_pick: sending home trajectory, waiting {self.home_move_time}s...')
+                self._send_home_trajectory()
+                time.sleep(self.home_move_time)
+                self.get_logger().info('Home reached.')
+            if self.exit_on_complete:
+                self.get_logger().info('exit_on_complete=True — shutting down (success).')
+                self._exit_code = 0
+                rclpy.shutdown()
+                return
+            self.get_logger().info('Ready for next detection.')
             self.get_logger().info('=' * 60)
             self._busy = False
             return
@@ -410,11 +459,14 @@ class MoveItPickFromCamera(Node):
                 f'[{step}] MoveIt FAILED after {elapsed:.2f}s — '
                 f'error_code={error_code} ({error_name})'
             )
-            self.get_logger().error(
-                f'[{step}] Aborting sequence. Retrying in 5s.'
-            )
             self._retry_after = time.monotonic() + 5.0
             self._busy = False
+            if self.exit_on_complete:
+                self.get_logger().error(f'[{step}] exit_on_complete=True — shutting down (failure).')
+                self._exit_code = 1
+                rclpy.shutdown()
+            else:
+                self.get_logger().error(f'[{step}] Aborting sequence. Retrying in 5s.')
             return
 
         self.get_logger().info(
@@ -562,6 +614,29 @@ class MoveItPickFromCamera(Node):
         return goal
 
     # ------------------------------------------------------------------ #
+    # Home trajectory
+    # ------------------------------------------------------------------ #
+
+    def _send_home_trajectory(self):
+        """Send all arm + finger joints to home pose via raw joint trajectory."""
+        point = JointTrajectoryPoint()
+        point.positions = list(_HOME_JOINTS.values())
+        point.time_from_start = Duration(
+            sec=int(self.home_move_time),
+            nanosec=int((self.home_move_time % 1.0) * 1e9),
+        )
+
+        msg = JointTrajectory()
+        msg.joint_names = list(_HOME_JOINTS.keys())
+        msg.points = [point]
+
+        self._gripper_pub.publish(msg)
+        self.get_logger().info(
+            f'  Home trajectory published: {len(msg.joint_names)} joints  '
+            f'duration={self.home_move_time}s  topic={self.gripper_topic}'
+        )
+
+    # ------------------------------------------------------------------ #
     # Gripper command
     # ------------------------------------------------------------------ #
 
@@ -596,14 +671,19 @@ class MoveItPickFromCamera(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = MoveItPickFromCamera()
+    exit_code = 0
 
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     finally:
+        exit_code = node._exit_code
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':
