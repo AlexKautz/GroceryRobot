@@ -1,8 +1,8 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
 
-\title{A Very Cool and Catchy Title}
-\author{Authors' names go here }
+\title{Grocery Placement Robot}
+\author{Zhenkai Gao, Alex Kautz, Pascale Leone}
 \date{\vspace{-1em}}
 
 \usepackage{natbib}
@@ -16,6 +16,7 @@
 \usepackage{geometry}
 \usepackage{caption}
 \usepackage{float}
+\usepackage{hyperref}
 
 \begin{document}
 
@@ -28,7 +29,7 @@
 
 \section{Introduction}
 
-\textit{The introduction should describe the problem (in a non-technical manner, i.e., without math, equations, etc.), as well as motivate the problem, i.e., why is it important?}
+% \textit{The introduction should describe the problem (in a non-technical manner, i.e., without math, equations, etc.), as well as motivate the problem, i.e., why is it important?}
 
 Imagine a future where you receive a box of groceries from a delivery service (like Amazon), take the box to your kitchen table, and open it. Then, a helpful robotic arm takes items out of the box and puts them away. The arm knows the best place for each item, be it the cupboard, fridge, or freezer.
 
@@ -40,18 +41,17 @@ We then focused on just the sub-problem of picking up objects, integrating compu
 
 We analyzed the effect inverted images and shadows may have on the YOLO algorithm. We also measured the effect that lowering the position and orientation tolerance in trajectory planning has on the reliability of the picking up task.
 
-We hope this work can lead to real-world implementations of the picking up system.
-
+We hope this work can lead to real-world implementations of the grocery placing system, and broadly help with picking tasks for robotic arms.
 
 
 \section{Background Related Work}
 
-\textit{Following, you should provide the necessary background and discuss related work in the RL literature. This section should also be about a page. Citations should be in BibTeX format \citep{thrun2005probabilistic}.}
+% \textit{Following, you should provide the necessary background and discuss related work in the RL literature. This section should also be about a page. Citations should be in BibTeX format \citep{thrun2005probabilistic}.}
 
-\textbf{We should copy the background and related work from our proposal and then expand upon it.}
+% \textbf{We should copy the background and related work from our proposal and then expand upon it.}
 
 
-\textbf{We can expand upon it by rewriting our notes from each article we read.}
+% \textbf{We can expand upon it by rewriting our notes from each article we read.}
 
 Much research has been done in the field of home service robotics. For example, assisting the elderly with household tasks is a common application for robotics. In 1998, a team based out of Italy developed MOVAID. The MOVAID system consisted of a robotic arm attached to a driving base. MOVAID's goal was to assist in 3 main tasks: heating up food, cleaning the kitchen, and changing bed sheets. As part of that first task, the robot had to take food out of the refrigerator \cite{doi:10.3233/TAD-1999-10202}. 
 
@@ -78,13 +78,13 @@ In addition, recent approaches explore unified learning frameworks that jointly 
 
 
 % for final report
-\textit{A detailed description of your problem (with math, notation, algorithms, figures, etc.). Use footnotes to cite links to your code or videos. Add a footnote like "All developed source code for this project is available at ..."}
+% \textit{A detailed description of your problem (with math, notation, algorithms, figures, etc.). Use footnotes to cite links to your code or videos. Add a footnote like "All developed source code for this project is available at ..."}
 
-\textit{Notation and Problem Formulation
-How did you formalize the problem using mathematical notation?
-Tasks
-Subsections are useful for breaking down the problem into sub-parts. For example, you could break down the tasks for your project and list them one by one. 
-}
+% \textit{Notation and Problem Formulation
+% How did you formalize the problem using mathematical notation?
+% Tasks
+% Subsections are useful for breaking down the problem into sub-parts. For example, you could break down the tasks for your project and list them one by one. 
+% }
 
 \subsection{Theoretical Framework}
 
@@ -108,9 +108,10 @@ The gripper is controlled separately through joint trajectory commands, allowing
     \label{fig:MoveIt}
 \end{figure}
 
-\subsubsection{Destination Determination}
+% Cut as we did not do this part
+% \subsubsection{Destination Determination}
 
-How we used a lookup table after identifying the object from computer vision
+% How we used a lookup table after identifying the object from computer vision
 
 \subsection{Technical Approach}
 
@@ -144,28 +145,51 @@ Conceptually, the robot is treated as separate from the environment so that it c
 
 \subsubsection{Robot Arm and Gripper}
 
-For this project, we selected the UR3e robotic arm UR3e from Universal Robotics. UR3e is a popular and interactive robot manipulator widely adopted in industrial setting and it has the advantages to safely interact with human. Given that our project uses Gazebo as our simulator, UR3e official repository provides detailed URDF of the robot arm and the driver so that we could spawn the arm easily into our environment, UR3e also supports the ROS distro version - kilted - that we are using for this project. 
+For this project, we selected the UR3e robotic arm from Universal Robots as the main manipulator in our simulated environment.The UR3e is a compact 6 DoF collaborative robot arm that is commonly used in industrial and research settings. Its collaborative design makes it suitable for applications involving human environments, which aligns with our goal of developing a household grocery assistance robot.
 
-UR3e has a total of 6 degree of freedom that allows it to move freely in 3D space. However, given that the range of motion of UR3e is relatively small compared to Kinova Gen3 or UR5, we need to design our environment, including the grocery objects and the shelf, within the range of reach for the arm. There are also some positions within 3D space that are not solvable for each arm joints using inverse kinematics (IK) and these are the solutions we want to avoid, more testing results are further discussed in the experimental results section.
+The UR3e was also chosen for its compatibility with our software stack. Since our project uses Gazebo, ROS 2 Kilted, and MoveIt, the existing Universal Robots ROS 2 packages were useful because they provide robot description files, driver support, and MoveIt configuration resources. This made it easier to spawn the UR3e in Gazebo and integrate it into our motion planning pipeline.
 
-For the gripper, we used two blocks that open and close. While this designed only makes sense in the simulation, it's simplicity let us focus on other aspects of the work.
+The arm’s six degrees of freedom allow the end effector to move and orient itself in 3D space, which is necessary to manipulate grocery objects. However, the UR3e has a relatively limited workspace compared with larger arms such as the UR5 or Kinova Gen3. Therefore, the table, shelf, and grocery objects had to be placed within the arm’s reachable range. Some target poses may also fail due to inverse kinematics constraints, joint limits, or unfavorable orientations. These cases are further discussed in the experimental results section.
+
+For the gripper, we used a simplified two-block design in simulation. The two blocks open and close to represent a basic grasping mechanism. Although this design is not intended to be a physically realistic final gripper, it was sufficient for demonstrating the core grocery-pickup pipeline.
 
 \subsubsection{ROS}
 
-A list of the ROS nodes...
+Robot Operating System 2, shortened as ROS 2, serves as the base of our software stack. It is a robotics middleware that allows different parts of the system to communicate through topics, messages, services, and actions. In our project, we built several ROS 2 nodes that publish and subscribe to shared topics, allowing perception, localization, motion planning, and gripper control to work together as one coordinated system.
+
+A list of the ROS 2 nodes built for our project includes:
+
+overhead camera localizer:
+
+This node subscribes to the overhead RGB camera, depth camera, and camera information topics to detect the apple and estimate its 3D position. It publishes the apple location in the world frame as a PointStamped message, along with an annotated camera image and visualization marker.
+
+moveit pick from camera:
+
+This node subscribes to the apple position published by the overhead camera and builds a pick sequence including pre-grasp, grasp, and lift poses. It sends these pose goals to MoveIt through the action server and also publishes gripper commands during the grasping sequence.
+
+apple picker:
+
 
 \subsection{Methodology}
 
-For our experiment design we started off with a single apple object...
+For our experiment design we decided to focus on just the ``pick up" component of the overall grocery placement task. This allowed us to understand the effect changes to tolerance and lighting have to the process. 
 
+\subsubsection{changes to tolerance methodology}
+
+To evaluate the effect different levels of tolerance has on the pick up component, we considered the variables \texttt{position\_tolerance} and \texttt{orientation\_tolerance}. These inform the ROS Move-It! Package on how far from its goal position and orientation it can target when planning its kinematics \cite{moveit_movegroupinterface}. 
+
+\subsubsection{changes to object detection methodology}
+
+To evaluate the YOLOv8 model's performance on object detection we conducted an experiment where we inverted the images received from the camera stream and varied the placement of the ball. Using inverted images resulted in different locations for the shadow relative to the ball: in the original image the shadow is below the ball, while in the inverted one it is above. We compared 5 locations for the ball in the camera frame.
 
 % for final report
 \section{Experimental Results / Technical Demonstration}
 
-A description of how you evaluated or demonstrated your solution.\footnote{a video of the robot doing x y z is available at...} 
-
-To evaluate the YOLOv8 model's performance on object detection we conducted an experiment where we inverted the images received from the camera stream and varied the placement of the ball. Using inverted images resulted in different locations for the shadow relative to the ball: in the original image the shadow is below the ball, while in the inverted one it is above. We compared 5 locations for the ball in the camera frame. Detection results are detailed in Table \ref{tab:vision} and visualized in \ref{sec:bounding_box_vis}.
-\begin{table}[htbp]
+A description of how you evaluated or demonstrated your solution.\footnote{a video of the robot doing x y z is available at https://vimeo.com/1190248547} 
+\subsection{Tolerance experiment results}
+\subsection{Object detection experiment results}
+The results of our object detection experiment indicate that the YOLOv8 model does a better job of detecting the original image than the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final version of the experiment, we detect the ball using the original image.
+\begin{table}[H]
         \centering
          \renewcommand{\arraystretch}{1.4}
     \makebox[\textwidth][c]{ 
@@ -184,8 +208,9 @@ To evaluate the YOLOv8 model's performance on object detection we conducted an e
     \caption{True world position vs estimated world position for original and inverted images.}
     \label{tab:vision}
 \end{table}
-These results indicate that the YOLOv8 model does a better job of detecting the original image than the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final version of the experiment, we detect the ball using the original image.
-\subsection{Visualization of Object Detection Bounding Boxes}\label{sec:bounding_box_vis}
+
+
+\textbf{Visualization of Object Detection Bounding Boxes}
 \begin{figure}[H]
     \centering
 
@@ -252,7 +277,7 @@ We were able to successfully simulate a robotic arm in Gazebo and integrate YOLO
 
 There are many avenues for future work. Our initial proposal was to program a robotic arm in simulation to help a person unpack their grocery delivery order. We wanted our robot to classify grocery items as frozen, refrigerated, or non-perishable, and then place them in corresponding locations in the fridge or shelf. The next step would be to add the motion planning to have our robotic arm place the ball in the correct location. Then, we would like to add additional simulated grocery objects, and see if the YOLO algorithm could successfully recognize different objects in a cluttered environment. Ultimately, we'd like to deploy our robot in the real world. This would involve transferring the simulated Grocery Robot to the real UR3e arm.  
 
-Another interesting future work question would be to evaluate what position tolerance is necessary to complete the task successfully. Since lower tolerance req
+Another interesting future work question would be to evaluate what position tolerance is necessary to complete the task successfully. Our results show that lower tolerance has higher success rates. Since lower tolerance is more computationally expensive, however, we would like to find the highest possible position tolerance where the task can be completed. 
 
 %\section{Timeline and Individual Responsibilities}
 
