@@ -29,8 +29,8 @@ from multi_run import (
 
 # ─── Sweep configuration ──────────────────────────────────────────────────────
 
-POSITION_TOLERANCES    = [0.01, 0.02, 0.03, 0.04, 0.05]
-ORIENTATION_TOLERANCES = [0.01, 0.02, 0.03, 0.04, 0.05]
+POSITION_TOLERANCES    = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
+ORIENTATION_TOLERANCES = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
 
 # Set True to run Gazebo headless (no GUI window) and shorten settle/detection waits.
 # Trades visual feedback for speed: ~2–3 hours → ~1–1.5 hours for the full sweep.
