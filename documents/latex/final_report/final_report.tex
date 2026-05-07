@@ -17,6 +17,7 @@
 \usepackage{caption}
 \usepackage{float}
 \usepackage{hyperref}
+\usepackage{makecell}
 
 \begin{document}
 
@@ -44,7 +45,7 @@ We analyzed the effect inverted images and shadows may have on the YOLO algorith
 We hope this work can lead to real-world implementations of the grocery placing system, and broadly help with picking tasks for robotic arms.
 
 
-\section{Background Related Work}
+\section{Background and Related Work}
 
 % \textit{Following, you should provide the necessary background and discuss related work in the RL literature. This section should also be about a page. Citations should be in BibTeX format \citep{thrun2005probabilistic}.}
 
@@ -71,7 +72,7 @@ Recent work in robotic manipulation has shifted from traditional model- and plan
 In addition, recent approaches explore unified learning frameworks that jointly model perception, navigation, and interaction, enabling robots to actively improve performance through interaction with the environment \cite{uppal2024spin}. Finally, vision-language models allow robots to perform more semantic, task-aware manipulation, such as grasping specific object parts and generalizing to unseen objects \cite{oort2025open}.
 
 
-\section{Technical Approach / Methodology / Theoretical Framework}
+\section{Methods}
 
 % for proposal
 %Describe how you will approach the problem and its technical formulation. Feel free to re-state the basic RL formulas (e.g., if using Q-learning, state the update rule or the formula for what the Q function approximates). 
@@ -154,41 +155,73 @@ The arm’s six degrees of freedom allow the end effector to move and orient its
 For the gripper, we used a simplified two-block design in simulation. The two blocks open and close to represent a basic grasping mechanism. Although this design is not intended to be a physically realistic final gripper, it was sufficient for demonstrating the core grocery-pickup pipeline.
 
 \subsubsection{ROS}
+Robot Operating System 2, shortened as ROS 2, serves as the base of our software stack \cite{quigley2009ros}. It is a robotics middleware that allows different parts of the system to communicate through topics, messages, services, and actions. In our project, we built several ROS 2 nodes that publish and subscribe to shared topics, allowing perception, localization, motion planning, and gripper control to work together as one coordinated system.
 
-Robot Operating System 2, shortened as ROS 2, serves as the base of our software stack. It is a robotics middleware that allows different parts of the system to communicate through topics, messages, services, and actions. In our project, we built several ROS 2 nodes that publish and subscribe to shared topics, allowing perception, localization, motion planning, and gripper control to work together as one coordinated system.
+The ROS 2 nodes built for our project are:
+\begin{description}
+    \item[\texttt{overhead\_camera\_localizer}] Subscribes to the overhead RGB camera, depth camera, and camera information topics to detect the apple and estimate its 3D position. It publishes the apple location in the world frame as a \texttt{PointStamped} message, along with an annotated camera image and visualization marker.
+    
+    \item[\texttt{moveit\_pick\_from\_camera}] Subscribes to the apple position published by the overhead camera and builds a pick sequence including pre-grasp, grasp, and lift poses. It sends these pose goals to MoveIt through the action server and also publishes gripper commands during the grasping sequence. It is used during the tolerance experimentation.
+    
+    \item[\texttt{test\_apple\_detection}] Tests the \texttt{overhead\_camera\_localizer} by moving the apple to 5 different locations in sequence. It then save an image of the apple with an annotated bounding box from YOLO. It is used during the object detection experiment.
 
-A list of the ROS 2 nodes built for our project includes:
+    \item[\texttt{joint\_control\_panel}] Runs a GUI App with sliders to directly change the position of the robotic arm. Used during initial development for debugging.
 
-overhead camera localizer:
-
-This node subscribes to the overhead RGB camera, depth camera, and camera information topics to detect the apple and estimate its 3D position. It publishes the apple location in the world frame as a PointStamped message, along with an annotated camera image and visualization marker.
-
-moveit pick from camera:
-
-This node subscribes to the apple position published by the overhead camera and builds a pick sequence including pre-grasp, grasp, and lift poses. It sends these pose goals to MoveIt through the action server and also publishes gripper commands during the grasping sequence.
-
-apple picker:
-
+\end{description}
 
 \subsection{Methodology}
 
 For our experiment design we decided to focus on just the ``pick up" component of the overall grocery placement task. This allowed us to understand the effect changes to tolerance and lighting have to the process. 
 
-\subsubsection{changes to tolerance methodology}
+\subsubsection{Tolerance Variation Experiment}
+To evaluate the effect different levels of tolerance have on the pickup component, we considered the variables \texttt{position\_tolerance} and \texttt{orientation\_tolerance}. These inform the ROS MoveIt package on how far from its goal position and orientation it can target when planning its kinematics \cite{moveit_movegroupinterface}.
+We ran a large number of grasping attempts. For each attempt, we varied both the location of the ball and the tolerances. Five rows of our collected data are shown in Table \ref{tab:sample_runs}.
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.4}
+    \begin{tabular}{ccccc}
+        \toprule
+        \textbf{Ball X (m)} & \textbf{Ball Y (m)} & \makecell{\textbf{Position} \\ \textbf{Tolerance (m)}} & \makecell{\textbf{Orientation} \\ \textbf{Tolerance (rad)}} & \textbf{Result} \\
+        \midrule
+        0.40 & -0.10 & 0.01 & 0.02 & SUCCESS \\
+        0.35 &  0.00 & 0.01 & 0.06 & SUCCESS \\
+        0.40 &  0.10 & 0.02 & 0.05 & SUCCESS \\
+        0.30 & -0.10 & 0.05 & 0.02 & MISSED  \\
+        0.35 &  0.00 & 0.06 & 0.07 & MISSED  \\
+        \bottomrule
+    \end{tabular}
+    \caption{Sample of grasp trials showing ball position, tolerance parameters, and outcome.}
+    \label{tab:sample_runs}
+\end{table}
+We covered 8 possible values each for position and orientation tolerance, along with 5 ball locations, totaling 320 grasp attempts. To collect this data efficiently, we used an automated script that ran Gazebo headless, re-spawning the ball and detecting whether the grasp succeeded.\footnote{A video of the robot running these trials can be found at https://vimeo.com/1190248547} 
 
-To evaluate the effect different levels of tolerance has on the pick up component, we considered the variables \texttt{position\_tolerance} and \texttt{orientation\_tolerance}. These inform the ROS Move-It! Package on how far from its goal position and orientation it can target when planning its kinematics \cite{moveit_movegroupinterface}. 
-
-\subsubsection{changes to object detection methodology}
+\subsubsection{Object Detection Experiment}
 
 To evaluate the YOLOv8 model's performance on object detection we conducted an experiment where we inverted the images received from the camera stream and varied the placement of the ball. Using inverted images resulted in different locations for the shadow relative to the ball: in the original image the shadow is below the ball, while in the inverted one it is above. We compared 5 locations for the ball in the camera frame.
 
 % for final report
 \section{Experimental Results / Technical Demonstration}
 
-A description of how you evaluated or demonstrated your solution.\footnote{a video of the robot doing x y z is available at https://vimeo.com/1190248547} 
-\subsection{Tolerance experiment results}
-\subsection{Object detection experiment results}
-The results of our object detection experiment indicate that the YOLOv8 model does a better job of detecting the original image than the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final version of the experiment, we detect the ball using the original image.
+% A description of how you evaluated or demonstrated your solution.\footnote{a video of the robot doing x y z is available at https://vimeo.com/1190248547} 
+\subsection{Tolerance Variation Results}
+
+To analyze our collective data on tolerance, we added up the number of successful grasp attempts (out of 5) for each combination of position and orientation tolerance.
+
+We expect that as both position tolerance and orientation tolerance increase, the number of successful grasps also decreases.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{documents/latex/final_report/GraspSuccessesByPositionOrientationTolerance.png}
+    \caption{Bar chart of the number of successful grasps out of five attempts for each combination of position and orientation tolerance}
+    \label{fig:graspgraph}
+\end{figure}
+
+Figure \ref{fig:graspgraph} clearly shows that expectation on the effect of increasing position tolerance was correct;  the number of successful pick up attempts drops continuously. We also know the randomness in the data, this is because a pick up attempt with a high tolerance can still get "Lucky" position itself correctly.
+
+We do not see an effect of increasing the orientation tolerance. This may be due to the arm still being able to grasp the apple from different angles, or it could be simply that we need to explore a larger range of values for orientation tolerance. Future work could expand on this.
+
+\subsection{Object Detection Experiment Results}
+The results of our object detection experiment indicate that the YOLOv8 model does a better job of detecting the original image than the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final version of the experiment, we detect the ball using the original image with shadows below the ball.
 \begin{table}[H]
         \centering
          \renewcommand{\arraystretch}{1.4}
