@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 
+import re
+import subprocess
+import sys
 import time
 from copy import deepcopy
+from typing import Optional
 
 import math
 
@@ -27,6 +31,18 @@ from moveit_msgs.msg import (
 
 # Map MoveItErrorCodes.val integers to human-readable names for logging.
 _MOVEIT_ERROR_NAMES = {v: k for k, v in vars(MoveItErrorCodes).items() if isinstance(v, int)}
+
+# Home pose joint angles — matches home_pose.py
+_HOME_JOINTS = {
+    'shoulder_pan_joint':  0.0,
+    'shoulder_lift_joint': -1.57,
+    'elbow_joint':          1.57,
+    'wrist_1_joint':       -1.57,
+    'wrist_2_joint':        0.0,
+    'wrist_3_joint':        0.0,
+    'left_finger_joint':    0.0,
+    'right_finger_joint':   0.0,
+}
 
 
 class MoveItPickFromCamera(Node):
@@ -93,6 +109,13 @@ class MoveItPickFromCamera(Node):
         self.declare_parameter('gripper_move_time', 1.0)
         self.declare_parameter('step_settle_time', 4.0)
 
+        # Multi-run control
+        self.declare_parameter('go_home_before_pick', False)
+        self.declare_parameter('go_home_after_pick', False)
+        self.declare_parameter('home_move_time', 3.0)
+        self.declare_parameter('exit_on_complete', False)
+        self.declare_parameter('pick_success_z_threshold', 0.15)
+
         self.apple_topic = self.get_parameter('apple_topic').value
         self.move_group_action = self.get_parameter('move_group_action').value
         self.planning_group = self.get_parameter('planning_group').value
@@ -130,6 +153,14 @@ class MoveItPickFromCamera(Node):
         self.gripper_closed = self.get_parameter('gripper_closed').value
         self.gripper_move_time = self.get_parameter('gripper_move_time').value
         self.step_settle_time = self.get_parameter('step_settle_time').value
+
+        self.go_home_before_pick = self.get_parameter('go_home_before_pick').value
+        self.go_home_after_pick = self.get_parameter('go_home_after_pick').value
+        self.home_move_time = self.get_parameter('home_move_time').value
+        self.exit_on_complete = self.get_parameter('exit_on_complete').value
+        self.pick_success_z_threshold = self.get_parameter('pick_success_z_threshold').value
+        self._exit_code = 0
+        self._pick_succeeded = None  # set after lift: True/False/None(unavailable)
 
         # ---------------- ROS interfaces ----------------
 
@@ -185,6 +216,12 @@ class MoveItPickFromCamera(Node):
         self.get_logger().info(f'  gripper_move_time:    {self.gripper_move_time}s')
         self.get_logger().info(f'  step_settle_time:     {self.step_settle_time}s')
         self.get_logger().info(f'  tool_orientation:     qx={self.tool_orientation.x} qy={self.tool_orientation.y} qz={self.tool_orientation.z} qw={self.tool_orientation.w}')
+        self.get_logger().info(f'  go_home_before_pick:  {self.go_home_before_pick}')
+        self.get_logger().info(f'  go_home_after_pick:   {self.go_home_after_pick}')
+        self.get_logger().info(f'  home_move_time:       {self.home_move_time}s')
+        self.get_logger().info(f'  exit_on_complete:     {self.exit_on_complete}')
+        self.get_logger().info(f'  position_tolerance:   {self.position_tolerance}m')
+        self.get_logger().info(f'  orientation_tolerance:{self.orientation_tolerance}rad')
         self.get_logger().info('=' * 60)
         self.get_logger().info('Waiting for apple detection...')
 
@@ -215,6 +252,13 @@ class MoveItPickFromCamera(Node):
 
         self.get_logger().info('-' * 60)
         self.get_logger().info('APPLE DETECTED — starting pick sequence')
+        self.get_logger().info(f'  position_tolerance={self.position_tolerance}m  orientation_tolerance={self.orientation_tolerance}rad')
+
+        if self.go_home_before_pick:
+            self.get_logger().info(f'go_home_before_pick: sending home trajectory, waiting {self.home_move_time}s...')
+            self._send_home_trajectory()
+            time.sleep(self.home_move_time)
+            self.get_logger().info('Home reached — proceeding with pick.')
         self.get_logger().info(
             f'  frame_id: [{msg.header.frame_id}]  '
             f'x={msg.point.x:.4f}  y={msg.point.y:.4f}  z={msg.point.z:.4f}'
@@ -342,7 +386,31 @@ class MoveItPickFromCamera(Node):
     def _send_next_pose(self):
         if len(self._sequence) == 0:
             self.get_logger().info('=' * 60)
-            self.get_logger().info('Pick sequence COMPLETE — ready for next detection.')
+            self.get_logger().info('Pick sequence COMPLETE')
+
+            # Check whether the ball was actually gripped before the arm goes home
+            lifted = self._check_ball_lifted()
+            self._pick_succeeded = lifted
+            if lifted is True:
+                self.get_logger().info('[pick check] PICK SUCCESS — ball confirmed above table')
+            elif lifted is False:
+                self.get_logger().warn('[pick check] PICK MISSED — ball still at table height')
+            else:
+                self.get_logger().info('[pick check] result unavailable — outcome unknown')
+
+            if self.go_home_after_pick:
+                self.get_logger().info(f'go_home_after_pick: sending home trajectory, waiting {self.home_move_time}s...')
+                self._send_home_trajectory()
+                time.sleep(self.home_move_time)
+                self.get_logger().info('Home reached.')
+            if self.exit_on_complete:
+                # exit 0 = picked, exit 2 = motion ok but ball not lifted
+                self._exit_code = 2 if self._pick_succeeded is False else 0
+                status_str = 'MISSED (exit 2)' if self._exit_code == 2 else 'SUCCESS (exit 0)'
+                self.get_logger().info(f'exit_on_complete=True — shutting down ({status_str}).')
+                rclpy.shutdown()
+                return
+            self.get_logger().info('Ready for next detection.')
             self.get_logger().info('=' * 60)
             self._busy = False
             return
@@ -410,11 +478,14 @@ class MoveItPickFromCamera(Node):
                 f'[{step}] MoveIt FAILED after {elapsed:.2f}s — '
                 f'error_code={error_code} ({error_name})'
             )
-            self.get_logger().error(
-                f'[{step}] Aborting sequence. Retrying in 5s.'
-            )
             self._retry_after = time.monotonic() + 5.0
             self._busy = False
+            if self.exit_on_complete:
+                self.get_logger().error(f'[{step}] exit_on_complete=True — shutting down (failure).')
+                self._exit_code = 1
+                rclpy.shutdown()
+            else:
+                self.get_logger().error(f'[{step}] Aborting sequence. Retrying in 5s.')
             return
 
         self.get_logger().info(
@@ -562,6 +633,80 @@ class MoveItPickFromCamera(Node):
         return goal
 
     # ------------------------------------------------------------------ #
+    # Pick success check
+    # ------------------------------------------------------------------ #
+
+    def _check_ball_lifted(self) -> Optional[bool]:
+        """
+        Query the apple's Z position directly from Gazebo after the lift step.
+        Returns True if the ball is above _PICK_SUCCESS_Z_THRESHOLD (picked),
+        False if it is still at table height (missed), or None if the check
+        could not be completed (treat as unknown, not a failure).
+        """
+        try:
+            result = subprocess.run(
+                ["gz", "topic", "-e", "-n", "1",
+                 "-t", "/world/empty/dynamic_pose/info"],
+                capture_output=True, text=True, timeout=5.0,
+            )
+        except subprocess.TimeoutExpired:
+            self.get_logger().warn('[pick check] gz topic timed out — result unknown')
+            return None
+        except FileNotFoundError:
+            self.get_logger().warn('[pick check] gz binary not found — skipping check')
+            return None
+
+        if result.returncode != 0:
+            self.get_logger().warn(
+                f'[pick check] gz topic failed: {result.stderr.strip()}')
+            return None
+
+        # The output is protobuf text (Pose_V).  Find the pose block whose name
+        # is exactly "apple" (not "apple::apple_link") and read its z field.
+        idx = result.stdout.find('name: "apple"\n')
+        if idx == -1:
+            self.get_logger().warn('[pick check] apple pose not found in gz output')
+            return None
+
+        chunk = result.stdout[idx: idx + 300]
+        z_match = re.search(r'\bz:\s*([-\d.eE+]+)', chunk)
+        if not z_match:
+            self.get_logger().warn('[pick check] z field not found in apple pose block')
+            return None
+
+        ball_z = float(z_match.group(1))
+        lifted = ball_z > self.pick_success_z_threshold
+        self.get_logger().info(
+            f'[pick check] apple Z = {ball_z:.4f} m  '
+            f'threshold = {self.pick_success_z_threshold} m  '
+            f'→ {"LIFTED ✓" if lifted else "NOT LIFTED ✗"}'
+        )
+        return lifted
+
+    # ------------------------------------------------------------------ #
+    # Home trajectory
+    # ------------------------------------------------------------------ #
+
+    def _send_home_trajectory(self):
+        """Send all arm + finger joints to home pose via raw joint trajectory."""
+        point = JointTrajectoryPoint()
+        point.positions = list(_HOME_JOINTS.values())
+        point.time_from_start = Duration(
+            sec=int(self.home_move_time),
+            nanosec=int((self.home_move_time % 1.0) * 1e9),
+        )
+
+        msg = JointTrajectory()
+        msg.joint_names = list(_HOME_JOINTS.keys())
+        msg.points = [point]
+
+        self._gripper_pub.publish(msg)
+        self.get_logger().info(
+            f'  Home trajectory published: {len(msg.joint_names)} joints  '
+            f'duration={self.home_move_time}s  topic={self.gripper_topic}'
+        )
+
+    # ------------------------------------------------------------------ #
     # Gripper command
     # ------------------------------------------------------------------ #
 
@@ -596,14 +741,19 @@ class MoveItPickFromCamera(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = MoveItPickFromCamera()
+    exit_code = 0
 
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     finally:
+        exit_code = node._exit_code
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+    sys.exit(exit_code)
 
 
 if __name__ == '__main__':

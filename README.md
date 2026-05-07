@@ -33,6 +33,48 @@ bash teardown.sh
 
 ---
 
+## Automated tolerance sweep (overnight)
+
+`sweep_run.sh` runs all 25 combinations of `POSITION_TOLERANCE × ORIENTATION_TOLERANCE` automatically in a single Gazebo session — 5 ball positions each, 125 pick cycles total. Results are appended to `multi_run_results.csv`.
+
+```bash
+bash sweep_run.sh
+```
+
+Edit the knobs at the top of `sweep_run.py` before running:
+
+| Variable | What it controls |
+|---|---|
+| `POSITION_TOLERANCES` | List of MoveIt position tolerances to test (metres) |
+| `ORIENTATION_TOLERANCES` | List of MoveIt orientation tolerances to test (radians) |
+| `FAST_MODE` | `True` = headless Gazebo (no window) + shorter settle times — roughly 2× faster |
+
+**Keep the computer awake on Ubuntu**
+
+Wrap the command with `gnome-session-inhibit` so suspend is blocked for exactly as long as the sweep runs, then automatically re-enabled when it finishes:
+
+```bash
+gnome-session-inhibit --inhibit suspend:idle --reason "overnight sweep" bash sweep_run.sh
+```
+
+Alternatively, disable suspend manually before you start and re-enable it after:
+
+```bash
+# Before — disable automatic suspend and screen blank
+gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
+gsettings set org.gnome.desktop.session idle-delay 0
+
+bash sweep_run.sh
+
+# After — restore defaults
+gsettings reset org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
+gsettings reset org.gnome.desktop.session idle-delay
+```
+
+> Make sure the machine is plugged in. Ubuntu's suspend settings are separate for battery vs. AC power — the commands above only affect AC.
+
+---
+
 ## What the simulation does
 
 1. A UR3e arm spawns in a world containing a table, a red apple, and a shelf

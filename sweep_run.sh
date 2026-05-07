@@ -1,5 +1,5 @@
 #!/bin/bash
-# launch.sh — Set up ROS environment and launch the interactive node manager.
+# sweep_run.sh — Set up ROS environment and run the 25-combination tolerance sweep.
 
 set -e
 
@@ -18,4 +18,4 @@ else
     echo "WARNING: venv not found at $VENV — run bash setup.sh first"
 fi
 
-exec python3 "$REPO/launch.py" "$@"
+exec python3 "$REPO/sweep_run.py" "$@"

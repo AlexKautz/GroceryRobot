@@ -1,5 +1,5 @@
 #!/bin/bash
-# launch.sh — Set up ROS environment and launch the interactive node manager.
+# full_single_run.sh — Set up ROS environment and run the automated launch sequence.
 
 set -e
 
@@ -18,4 +18,4 @@ else
     echo "WARNING: venv not found at $VENV — run bash setup.sh first"
 fi
 
-exec python3 "$REPO/launch.py" "$@"
+exec python3 "$REPO/full_single_run.py" "$@"

@@ -41,6 +41,7 @@ _kill9 "rqt_image_view"         "image viewer"          && any_killed=true
 _kill9 "move_group"             "MoveIt move_group"     && any_killed=true
 _kill9 "moveit_pick_from_camera" "pick node"            && any_killed=true
 _kill9 "overhead_camera_localizer" "camera localizer"   && any_killed=true
+_kill9 "static_transform_publisher" "static TF publishers" && any_killed=true
 
 sleep 1
 
