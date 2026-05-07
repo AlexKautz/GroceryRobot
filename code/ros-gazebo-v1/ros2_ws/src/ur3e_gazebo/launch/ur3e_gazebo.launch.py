@@ -28,19 +28,20 @@ def generate_launch_description():
     world = PathJoinSubstitution([FindPackageShare('ur3e_gazebo'), 'worlds', 'grocery_world.sdf'])
     gz_launch = PathJoinSubstitution([FindPackageShare('ros_gz_sim'), 'launch', 'gz_sim.launch.py'])
 
-    # Normal mode: GUI window, starts paused
+    # Normal mode: GUI window, starts running immediately
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([gz_launch]),
-        launch_arguments={'gz_args': world}.items(),
+        launch_arguments={'gz_args': [world, ' -r']}.items(),
         condition=UnlessCondition(headless),
     )
 
     # Headless mode: no GUI window, offscreen camera rendering, starts running immediately.
-    # --headless-rendering uses EGL so camera sensors work without a display.
+    # -s suppresses the GUI window (server-only).
+    # --headless-rendering uses EGL so camera sensors still produce images without a display.
     # -r starts the simulation unpaused (skips the manual unpause step).
     gazebo_headless = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([gz_launch]),
-        launch_arguments={'gz_args': [world, ' --headless-rendering -r']}.items(),
+        launch_arguments={'gz_args': [world, ' -s --headless-rendering -r']}.items(),
         condition=IfCondition(headless),
     )
 

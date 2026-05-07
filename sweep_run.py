@@ -35,7 +35,7 @@ ORIENTATION_TOLERANCES = [0.01, 0.02, 0.03, 0.04, 0.05]
 # Set True to run Gazebo headless (no GUI window) and shorten settle/detection waits.
 # Trades visual feedback for speed: ~2–3 hours → ~1–1.5 hours for the full sweep.
 # Requires a GPU that supports EGL (most NVIDIA/AMD/Intel setups do).
-FAST_MODE = False
+FAST_MODE = True
 
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ def main() -> None:
         print(f"  Letting controllers settle ({controller_settle_secs:.0f}s)...")
         time.sleep(controller_settle_secs)
 
-        gazebo_unpause()  # no-op in fast mode (-r already unpaused), safe to call anyway
+        gazebo_unpause()
 
         ocl = _node("Overhead Camera Localizer")
         ocl.selected = True
