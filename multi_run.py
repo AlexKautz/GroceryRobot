@@ -10,8 +10,11 @@ import subprocess
 import sys
 import time
 
+import csv
+import pathlib
+
 from launch_lib import (
-    NODES, LOGS_DIR,
+    NODES, LOGS_DIR, REPO_DIR,
     _c, BOLD, GREEN, YELLOW, GRAY, RED,
     cleanup, run_teardown,
     wait_for_topic, wait_for_action, gazebo_unpause,
@@ -29,14 +32,22 @@ BALL_POSITIONS = [
     (0.4,  -0.1,  0.065),   # 5 — near-left
 ]
 
-POSITION_TOLERANCE    = 0.01   # metres   — MoveIt goal position tolerance
-ORIENTATION_TOLERANCE = 0.02   # radians  — MoveIt goal orientation tolerance
+POSITION_TOLERANCE    = 0.2   # metres   — MoveIt goal position tolerance
+ORIENTATION_TOLERANCE = 0.2   # radians  — MoveIt goal orientation tolerance
 
 VELOCITY_SCALING      = 0.5    # 0.0–1.0  — fraction of maximum joint velocity
 ACCELERATION_SCALING  = 0.5    # 0.0–1.0  — fraction of maximum joint acceleration
 STEP_SETTLE_TIME      = 1.0    # seconds  — pause between arm movement steps
 
 PICK_TIMEOUT_SEC      = 120    # seconds  — per-cycle wall-clock timeout
+
+CSV_FILE = REPO_DIR / "multi_run_results.csv"
+
+_CSV_HEADER = [
+    "timestamp", "run", "ball_x", "ball_y", "ball_z",
+    "pos_tol", "ori_tol", "vel_scale", "accel_scale", "settle_s",
+    "result",
+]
 
 
 # ─── Apple SDF (mirrors the definition in grocery_world.sdf) ─────────────────
@@ -72,6 +83,23 @@ _APPLE_SDF = (
 
 def _node(name):
     return next(n for n in NODES if n.name == name)
+
+
+def write_csv_results(timestamp, results):
+    write_header = not CSV_FILE.exists() or CSV_FILE.stat().st_size == 0
+    with CSV_FILE.open("a", newline="") as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow(_CSV_HEADER)
+        for i, x, y, z, status in results:
+            label = {"ok": "SUCCESS", "pick_failed": "FAILED", "move_failed": "MOVE_FAILED"}.get(status, status)
+            writer.writerow([
+                timestamp, i, x, y, z,
+                POSITION_TOLERANCE, ORIENTATION_TOLERANCE,
+                VELOCITY_SCALING, ACCELERATION_SCALING, STEP_SETTLE_TIME,
+                label,
+            ])
+    print(f"  Results appended to {CSV_FILE.name}")
 
 
 def move_ball(x, y, z):
@@ -253,6 +281,8 @@ def main() -> None:
             ok = run_pick_cycle(i, x, y, z, timestamp)
             results.append((i, x, y, z, "ok" if ok else "pick_failed"))
             print()
+
+        write_csv_results(timestamp, results)
 
         # ── Summary ──────────────────────────────────────────────────────
         print("=" * 50)
