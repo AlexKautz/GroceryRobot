@@ -144,8 +144,9 @@ Conceptually, the robot is treated as separate from the environment so that it c
 
 \subsubsection{Robot Arm and Gripper}
 
-For this project, we used the robotic arm...
-It had the advantage of being...
+For this project, we selected the UR3e robotic arm UR3e from Universal Robotics. UR3e is a popular and interactive robot manipulator widely adopted in industrial setting and it has the advantages to safely interact with human. Given that our project uses Gazebo as our simulator, UR3e official repository provides detailed URDF of the robot arm and the driver so that we could spawn the arm easily into our environment, UR3e also supports the ROS distro version - kilted - that we are using for this project. 
+
+UR3e has a total of 6 degree of freedom that allows it to move freely in 3D space. However, given that the range of motion of UR3e is relatively small compared to Kinova Gen3 or UR5, we need to design our environment, including the grocery objects and the shelf, within the range of reach for the arm. There are also some positions within 3D space that are not solvable for each arm joints using inverse kinematics (IK) and these are the solutions we want to avoid, more testing results are further discussed in the experimental results section.
 
 For the gripper, we used two blocks that open and close. While this designed only makes sense in the simulation, it's simplicity let us focus on other aspects of the work.
 
@@ -183,7 +184,7 @@ To evaluate the YOLOv8 model's performance on object detection we conducted an e
     \caption{True world position vs estimated world position for original and inverted images.}
     \label{tab:vision}
 \end{table}
-These results indicate that the YOLOv8 model does a better job of detecting the original image than the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. This is an important consideration if our Grocery Robot were to actually be deployed.
+These results indicate that the YOLOv8 model does a better job of detecting the original image than the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final version of the experiment, we detect the ball using the original image.
 \subsection{Visualization of Object Detection Bounding Boxes}\label{sec:bounding_box_vis}
 \begin{figure}[H]
     \centering
@@ -247,9 +248,11 @@ These results indicate that the YOLOv8 model does a better job of detecting the 
 % for final report
 \section{Conclusion and Future Work}
 
-We were able to successfully simulate a robotic arm in gazebo, use YOLOv8 for object detection and recognition, and use MoveIt for motion planning to move the arm to the ball and adjust the gripper so it could be picked up. Our results demonstrate that YOLOv8 is an appropriate vision model for our task, as we were able to successfully locate the ball and compute its centroid. 
+We were able to successfully simulate a robotic arm in Gazebo and integrate YOLO and MoveIt for object detection an motion planning, respectively. Our results demonstrate that YOLOv8 pretrained on the COCO dataset is an appropriate vision model for our task, as we were able to successfully locate the ball and compute its centroid. In addition, we evaluated several conditions that affect the robot arm's performance. In our vision experiment, we tested how the location of shadows affects object detection performance. In addition, we measured the effect of the position and orientation tolerance on the robot arm's gripping abilities. These are all important factors we would need to consider if our Grocery Robot were to actually be deployed. At the end of our experiment, our robotic arm is able identify the location of the ball, plan a trajectory to the ball, and pick it up using the gripper.
 
-There are many avenues for future work. Due to time constraints, we were not able to complete the project we had initially planned. Our 
+There are many avenues for future work. Our initial proposal was to program a robotic arm in simulation to help a person unpack their grocery delivery order. We wanted our robot to classify grocery items as frozen, refrigerated, or non-perishable, and then place them in corresponding locations in the fridge or shelf. The next step would be to add the motion planning to have our robotic arm place the ball in the correct location. Then, we would like to add additional simulated grocery objects, and see if the YOLO algorithm could successfully recognize different objects in a cluttered environment. Ultimately, we'd like to deploy our robot in the real world. This would involve transferring the simulated Grocery Robot to the real UR3e arm.  
+
+Another interesting future work question would be to evaluate what position tolerance is necessary to complete the task successfully. Since lower tolerance req
 
 %\section{Timeline and Individual Responsibilities}
 
