@@ -1,11 +1,12 @@
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, RegisterEventHandler
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, RegisterEventHandler
+from launch.conditions import IfCondition, UnlessCondition
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
 from launch_ros.actions import Node
 from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import PathJoinSubstitution, Command
 
 
 def generate_launch_description():
@@ -23,18 +24,24 @@ def generate_launch_description():
         value_type=str,
     )
 
-    # Start Gazebo with our world
+    headless = LaunchConfiguration('headless')
+    world = PathJoinSubstitution([FindPackageShare('ur3e_gazebo'), 'worlds', 'grocery_world.sdf'])
+    gz_launch = PathJoinSubstitution([FindPackageShare('ros_gz_sim'), 'launch', 'gz_sim.launch.py'])
+
+    # Normal mode: GUI window, starts paused
     gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([
-            PathJoinSubstitution([
-                FindPackageShare('ros_gz_sim'),
-                'launch',
-                'gz_sim.launch.py'
-            ])
-        ]),
-        launch_arguments={'gz_args': PathJoinSubstitution([
-            FindPackageShare('ur3e_gazebo'), 'worlds', 'grocery_world.sdf'
-        ])}.items(),
+        PythonLaunchDescriptionSource([gz_launch]),
+        launch_arguments={'gz_args': world}.items(),
+        condition=UnlessCondition(headless),
+    )
+
+    # Headless mode: no GUI window, offscreen camera rendering, starts running immediately.
+    # --headless-rendering uses EGL so camera sensors work without a display.
+    # -r starts the simulation unpaused (skips the manual unpause step).
+    gazebo_headless = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([gz_launch]),
+        launch_arguments={'gz_args': [world, ' --headless-rendering -r']}.items(),
+        condition=IfCondition(headless),
     )
 
     # Bridge 1: /clock only — critical for controller_manager sim time
@@ -152,7 +159,12 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument(
+            'headless', default_value='false',
+            description='Run Gazebo headless: no GUI window, offscreen camera rendering'
+        ),
         gazebo,
+        gazebo_headless,
         clock_bridge,
         camera_bridge,
         robot_state_publisher,

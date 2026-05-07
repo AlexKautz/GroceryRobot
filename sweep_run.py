@@ -32,6 +32,11 @@ from multi_run import (
 POSITION_TOLERANCES    = [0.01, 0.02, 0.03, 0.04, 0.05]
 ORIENTATION_TOLERANCES = [0.01, 0.02, 0.03, 0.04, 0.05]
 
+# Set True to run Gazebo headless (no GUI window) and shorten settle/detection waits.
+# Trades visual feedback for speed: ~2–3 hours → ~1–1.5 hours for the full sweep.
+# Requires a GPU that supports EGL (most NVIDIA/AMD/Intel setups do).
+FAST_MODE = False
+
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -125,6 +130,11 @@ def main() -> None:
     print("=" * 58)
     print()
 
+    # Settle/detection times: shorter in fast mode since headless has less overhead
+    # and -r starts unpaused so the physics engine is already running at clock time.
+    controller_settle_secs = 3.0 if FAST_MODE else 5.0
+    detection_wait_secs    = 1.5 if FAST_MODE else 3.0
+
     run_teardown()
 
     write_header = not CSV_FILE.exists() or CSV_FILE.stat().st_size == 0
@@ -136,15 +146,17 @@ def main() -> None:
     try:
         sim = _node("Simulation")
         sim.selected = True
-        print("  Starting Simulation...")
+        if FAST_MODE:
+            sim.command = sim.command + " headless:=true"
+        print("  Starting Simulation..." + (" (headless)" if FAST_MODE else ""))
         sim.start(timestamp)
         active_nodes.append(sim)
 
         wait_for_topic("/clock", "Gazebo clock", timeout_sec=90)
-        print("  Letting controllers settle (5s)...")
-        time.sleep(5)
+        print(f"  Letting controllers settle ({controller_settle_secs:.0f}s)...")
+        time.sleep(controller_settle_secs)
 
-        gazebo_unpause()
+        gazebo_unpause()  # no-op in fast mode (-r already unpaused), safe to call anyway
 
         ocl = _node("Overhead Camera Localizer")
         ocl.selected = True
@@ -183,8 +195,8 @@ def main() -> None:
                     print()
                     continue
 
-                print("  Waiting 3s for fresh apple detection...")
-                time.sleep(3.0)
+                print(f"  Waiting {detection_wait_secs:.1f}s for fresh apple detection...")
+                time.sleep(detection_wait_secs)
 
                 status = run_pick_cycle(i, x, y, z, timestamp, combo_label, pos_tol, ori_tol)
                 combo_results.append((i, x, y, z, status))
