@@ -32,12 +32,15 @@ BALL_POSITIONS = [
     (0.4,  -0.1,  0.065),   # 5 — near-left
 ]
 
-POSITION_TOLERANCE    = 0.2   # metres   — MoveIt goal position tolerance
-ORIENTATION_TOLERANCE = 0.2   # radians  — MoveIt goal orientation tolerance
+POSITION_TOLERANCE    = 0.01   # metres   — MoveIt goal position tolerance
+ORIENTATION_TOLERANCE = 0.01   # radians  — MoveIt goal orientation tolerance
 
 VELOCITY_SCALING      = 0.5    # 0.0–1.0  — fraction of maximum joint velocity
 ACCELERATION_SCALING  = 0.5    # 0.0–1.0  — fraction of maximum joint acceleration
 STEP_SETTLE_TIME      = 1.0    # seconds  — pause between arm movement steps
+
+PICK_SUCCESS_Z_THRESHOLD = 0.15  # metres  — ball must exceed this Z after lift to count as picked
+                                 #           table ≈ 0.065 m, lift target ≈ 0.315 m
 
 PICK_TIMEOUT_SEC      = 120    # seconds  — per-cycle wall-clock timeout
 
@@ -92,7 +95,7 @@ def write_csv_results(timestamp, results):
         if write_header:
             writer.writerow(_CSV_HEADER)
         for i, x, y, z, status in results:
-            label = {"ok": "SUCCESS", "pick_failed": "FAILED", "move_failed": "MOVE_FAILED"}.get(status, status)
+            label = {"ok": "SUCCESS", "missed": "MISSED", "failed": "FAILED", "move_failed": "MOVE_FAILED"}.get(status, status.upper())
             writer.writerow([
                 timestamp, i, x, y, z,
                 POSITION_TOLERANCE, ORIENTATION_TOLERANCE,
@@ -173,6 +176,7 @@ def run_pick_cycle(run_idx, x, y, z, timestamp):
         " -p lift_z_offset:=0.25"
         " -p gripper_open:=0.08"
         " -p gripper_closed:=-0.006"
+        f" -p pick_success_z_threshold:={PICK_SUCCESS_Z_THRESHOLD}"
         " -p go_home_before_pick:=true"
         " -p go_home_after_pick:=true"
         " -p exit_on_complete:=true"
@@ -200,11 +204,14 @@ def run_pick_cycle(run_idx, x, y, z, timestamp):
 
     rc = proc.returncode
     if rc == 0:
-        print(_c(f"  ✓ Run {run_idx}: SUCCESS (exit 0)", GREEN))
-        return True
+        print(_c(f"  ✓ Run {run_idx}: SUCCESS", GREEN))
+        return "ok"
+    elif rc == 2:
+        print(_c(f"  ~ Run {run_idx}: MISSED — arm moved correctly but ball not lifted", YELLOW))
+        return "missed"
     else:
-        print(_c(f"  ✗ Run {run_idx}: FAILED (exit {rc}) — see {log_path.name}", YELLOW))
-        return False
+        print(_c(f"  ✗ Run {run_idx}: FAILED (exit {rc}) — see {log_path.name}", RED))
+        return "failed"
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
@@ -278,8 +285,8 @@ def main() -> None:
             print("  Waiting 3s for fresh apple detection...")
             time.sleep(3.0)
 
-            ok = run_pick_cycle(i, x, y, z, timestamp)
-            results.append((i, x, y, z, "ok" if ok else "pick_failed"))
+            cycle_status = run_pick_cycle(i, x, y, z, timestamp)
+            results.append((i, x, y, z, cycle_status))
             print()
 
         write_csv_results(timestamp, results)
@@ -293,13 +300,15 @@ def main() -> None:
         print(f"  acceleration_scaling  = {ACCELERATION_SCALING}")
         print(f"  step_settle_time      = {STEP_SETTLE_TIME} s")
         print()
-        ok_count = sum(1 for *_, s in results if s == "ok")
+        ok_count     = sum(1 for *_, s in results if s == "ok")
+        missed_count = sum(1 for *_, s in results if s == "missed")
         for i, x, y, z, status in results:
-            color = GREEN if status == "ok" else RED
-            label = {"ok": "SUCCESS", "pick_failed": "FAILED", "move_failed": "MOVE FAILED"}.get(status, status)
+            color = GREEN if status == "ok" else (YELLOW if status == "missed" else RED)
+            label = {"ok": "SUCCESS", "missed": "MISSED", "failed": "FAILED", "move_failed": "MOVE FAILED"}.get(status, status)
             print(f"  Run {i}  ({x:.3f}, {y:.3f}, {z:.3f})  {_c(label, color)}")
         print()
-        print(f"  {_c(str(ok_count), GREEN if ok_count == len(results) else YELLOW)}/{len(results)} cycles succeeded")
+        print(f"  {_c(str(ok_count), GREEN if ok_count == len(results) else YELLOW)}/{len(results)} picked"
+              + (f"  ({missed_count} missed)" if missed_count else ""))
         print("=" * 50)
         print()
 

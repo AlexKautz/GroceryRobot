@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
+import re
+import subprocess
 import sys
 import time
 from copy import deepcopy
+from typing import Optional
 
 import math
 
@@ -111,6 +114,7 @@ class MoveItPickFromCamera(Node):
         self.declare_parameter('go_home_after_pick', False)
         self.declare_parameter('home_move_time', 3.0)
         self.declare_parameter('exit_on_complete', False)
+        self.declare_parameter('pick_success_z_threshold', 0.15)
 
         self.apple_topic = self.get_parameter('apple_topic').value
         self.move_group_action = self.get_parameter('move_group_action').value
@@ -154,7 +158,9 @@ class MoveItPickFromCamera(Node):
         self.go_home_after_pick = self.get_parameter('go_home_after_pick').value
         self.home_move_time = self.get_parameter('home_move_time').value
         self.exit_on_complete = self.get_parameter('exit_on_complete').value
+        self.pick_success_z_threshold = self.get_parameter('pick_success_z_threshold').value
         self._exit_code = 0
+        self._pick_succeeded = None  # set after lift: True/False/None(unavailable)
 
         # ---------------- ROS interfaces ----------------
 
@@ -381,14 +387,27 @@ class MoveItPickFromCamera(Node):
         if len(self._sequence) == 0:
             self.get_logger().info('=' * 60)
             self.get_logger().info('Pick sequence COMPLETE')
+
+            # Check whether the ball was actually gripped before the arm goes home
+            lifted = self._check_ball_lifted()
+            self._pick_succeeded = lifted
+            if lifted is True:
+                self.get_logger().info('[pick check] PICK SUCCESS — ball confirmed above table')
+            elif lifted is False:
+                self.get_logger().warn('[pick check] PICK MISSED — ball still at table height')
+            else:
+                self.get_logger().info('[pick check] result unavailable — outcome unknown')
+
             if self.go_home_after_pick:
                 self.get_logger().info(f'go_home_after_pick: sending home trajectory, waiting {self.home_move_time}s...')
                 self._send_home_trajectory()
                 time.sleep(self.home_move_time)
                 self.get_logger().info('Home reached.')
             if self.exit_on_complete:
-                self.get_logger().info('exit_on_complete=True — shutting down (success).')
-                self._exit_code = 0
+                # exit 0 = picked, exit 2 = motion ok but ball not lifted
+                self._exit_code = 2 if self._pick_succeeded is False else 0
+                status_str = 'MISSED (exit 2)' if self._exit_code == 2 else 'SUCCESS (exit 0)'
+                self.get_logger().info(f'exit_on_complete=True — shutting down ({status_str}).')
                 rclpy.shutdown()
                 return
             self.get_logger().info('Ready for next detection.')
@@ -612,6 +631,57 @@ class MoveItPickFromCamera(Node):
         )
 
         return goal
+
+    # ------------------------------------------------------------------ #
+    # Pick success check
+    # ------------------------------------------------------------------ #
+
+    def _check_ball_lifted(self) -> Optional[bool]:
+        """
+        Query the apple's Z position directly from Gazebo after the lift step.
+        Returns True if the ball is above _PICK_SUCCESS_Z_THRESHOLD (picked),
+        False if it is still at table height (missed), or None if the check
+        could not be completed (treat as unknown, not a failure).
+        """
+        try:
+            result = subprocess.run(
+                ["gz", "topic", "-e", "-n", "1",
+                 "-t", "/world/empty/dynamic_pose/info"],
+                capture_output=True, text=True, timeout=5.0,
+            )
+        except subprocess.TimeoutExpired:
+            self.get_logger().warn('[pick check] gz topic timed out — result unknown')
+            return None
+        except FileNotFoundError:
+            self.get_logger().warn('[pick check] gz binary not found — skipping check')
+            return None
+
+        if result.returncode != 0:
+            self.get_logger().warn(
+                f'[pick check] gz topic failed: {result.stderr.strip()}')
+            return None
+
+        # The output is protobuf text (Pose_V).  Find the pose block whose name
+        # is exactly "apple" (not "apple::apple_link") and read its z field.
+        idx = result.stdout.find('name: "apple"\n')
+        if idx == -1:
+            self.get_logger().warn('[pick check] apple pose not found in gz output')
+            return None
+
+        chunk = result.stdout[idx: idx + 300]
+        z_match = re.search(r'\bz:\s*([-\d.eE+]+)', chunk)
+        if not z_match:
+            self.get_logger().warn('[pick check] z field not found in apple pose block')
+            return None
+
+        ball_z = float(z_match.group(1))
+        lifted = ball_z > self.pick_success_z_threshold
+        self.get_logger().info(
+            f'[pick check] apple Z = {ball_z:.4f} m  '
+            f'threshold = {self.pick_success_z_threshold} m  '
+            f'→ {"LIFTED ✓" if lifted else "NOT LIFTED ✗"}'
+        )
+        return lifted
 
     # ------------------------------------------------------------------ #
     # Home trajectory
