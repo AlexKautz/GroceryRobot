@@ -1,0 +1,30 @@
+Apple Detection Test Summary
+==================================================
+
+Detection rate: 5/5
+
+Position 1
+  True world:      (0.350, 0.000, 0.065)
+  Estimated world: (0.349, -0.001, 0.105)
+  3D error:        0.0400 m
+
+Position 2
+  True world:      (0.300, 0.100, 0.065)
+  Estimated world: (0.305, 0.089, 0.116)
+  3D error:        0.0529 m
+
+Position 3
+  True world:      (0.300, -0.100, 0.065)
+  Estimated world: (0.305, -0.089, 0.117)
+  3D error:        0.0529 m
+
+Position 4
+  True world:      (0.400, 0.100, 0.065)
+  Estimated world: (0.394, 0.089, 0.116)
+  3D error:        0.0528 m
+
+Position 5
+  True world:      (0.400, -0.100, 0.065)
+  Estimated world: (0.394, -0.089, 0.116)
+  3D error:        0.0528 m
+

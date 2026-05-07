@@ -8,14 +8,6 @@
 \usepackage{natbib}
 \usepackage{graphicx}
 \usepackage{parskip} % Paragraphs use vertical spacing instead of indentation.
-\usepackage{siunitx}
-\usepackage{booktabs}
-
-
-\usepackage{longtable}
-\usepackage{geometry}
-\usepackage{caption}
-\usepackage{float}
 
 \begin{document}
 
@@ -31,11 +23,16 @@
 \textit{The introduction should describe the problem (in a non-technical manner, i.e., without math, equations, etc.), as well as motivate the problem, i.e., why is it important?}
 
 Imagine a future where you receive a box of groceries from a delivery service (like Amazon), take the box to your kitchen table, and open it. Then, a helpful robotic arm takes items out of the box and puts them away. The arm knows the best place for each item, be it the cupboard, fridge, or freezer.
+
 This kind of assistance can be a powerful utility for elderly or disabled individuals, as well as for professional kitchens where inventory management is a major time sink.
 
-For our project, we simulated a version of this arm using Gazebo in order to explore the problem space. We measured the effects that varying grocery density within the box, item shape, and camera configurations have on the reliability of the placement system.
-We hope this work can lead to real-world implementations.
+For our project, we simulated a version of this arm using Gazebo in order to explore the problem space. We designed an environment analogous to a real kitchen, and laid out a design for the full system.
 
+We then focused on just the sub-problem of picking up objects, integrating computer vision techniques like YOLO, and trajectory planning tools like MoveIt.
+
+We analyzed the effect inverted images and shadows may have on the YOLO algorithm. We also measured the effect that lowering the position and orientation tolerance in trajectory planning has on the reliability of the picking up task.
+
+We hope this work can lead to real-world implementations of the picking up system.
 
 
 \section{Background Related Work}
@@ -87,20 +84,12 @@ Subsections are useful for breaking down the problem into sub-parts. For example
 To detect, recognize, and locate our object we use a YOLO (You Only Look Once) model. YOLO is an object detection and segmentation model initially developed by Joseph Redmon, Santosh Divvala, Ross Girshick, and Ali Farhadi at the University of Washington in 2015 \cite{DBLP:journals/corr/RedmonDGF15}. Their model differs from prior object detection techniques because they frame  object detection as a regression problem. A single convolutional neural network simultaneously predicts bounding boxes and class probabilities. This allows for incredibly fast and generalizable object detection.
 
 
-In our project, we use the COCO-pretrained YOLOv8 model, released in 2023 by Ultralytics \cite{yolov8_ultralytics}. COCO is a large-scale annotated object detection and segmentation dataset. The classes in this dataset are diverse, containing categories such as cars, animals, or handbags. This dataset is appropriate for the scale of our problem, as it includes several grocery items as classes, specifically apple, orange, banana, carrot, and broccoli. In our scaled-down simulation we are using a red ball. The COCO dataset has a category called `sports ball'. Since we are using a single fixed item, COCO is an adequate dataset for model training.
+In our project, we use the COCO-pretrained YOLOv8 model, released in 2023 by Ultralytics \cite{yolov8_ultralytics}. COCO is a large-scale annotated object detection and segmentation dataset. The classes in this dataset are diverse, containing categories such as cars, animals, or handbags. This dataset is appropriate for the scale of our problem, as it includes several grocery items as classes, specifically apple, orange, banana, carrot, and broccoli. Since we are using fixed items *blank* this is adequate.
 
-Our overhead camera uses YOLOv8 to detect the ball's bounding box. From there it computes and stores the centroid of the ball. We then compute the depth level based on the centroid coordinates. With these x,y,z values we transform the pixel location to the location in the simulation world. This information is published for use in the trajectory calculation.
-\subsubsection{Trajectory Motion Planning}
+Our overhead camera uses YOLOv8 to detect the apples bounding box. From there it computes and stores the centroid of the apple. We then compute the depth level based on the centroid coordinates. With these x,y,z values we transform the pixel location to the location in the simulation world. This information is published for use in the trajectory calculation.
+\subsubsection{Trajectory Calculation}
 
-The trajectory motion planning module connects the overhead camera perception output to the UR3e arm motion execution through MoveIt. After the camera perception node detects the target grocery object, it publishes the object's 3D position as a PointStamped message. The motion planning node subscribes to this coordinate and generates a pick-up sequence consisting of a pre-grasp pose, grasp pose, and lift pose. These poses were obtained by adding vertical offsets to the detected object position. Each target pose is converted into a MoveIt MoveGroup action goal with position and orientation constraints for the end-effector link. Then MoveIt plans and executes collision-aware trajectories for the UR3e manipulator to approach the object, reach the grasp pose, and lift the object after the gripper closes. 
-The gripper is controlled separately through joint trajectory commands, allowing the system to coordinate arm motion and grasp execution in a simple closed-loop pickup pipeline.
-
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.7\textwidth]{documents/latex/final_report/Pipeline_MoveIt_pickup_node.png}
-    \caption{Pipeline of the MoveIt object pickup Node}
-    \label{fig:MoveIt}
-\end{figure}
+How we used Move-It! to calculate the trajectory while avoiding objects
 
 \subsubsection{Destination Determination}
 
@@ -157,83 +146,6 @@ For our experiment design we started off with a single apple object...
 
 A description of how you evaluated or demonstrated your solution.\footnote{a video of the robot doing x y z is available at...} 
 
-To evaluate the YOLOv8 model's performance on object detection we conducted an experiment where we inverted the images received from the camera stream and varied the placement of the ball. Using inverted images resulted in different locations for the shadow relative to the ball: in the original image the shadow is below the ball, while in the inverted one it is above. We compared 5 locations for the ball in the camera frame. Detection results are detailed in Table \ref{tab:vision} and visualized in \ref{sec:bounding_box_vis}.
-\begin{table}[h]
-        \centering
-         \renewcommand{\arraystretch}{1.4}
-    \makebox[\textwidth][c]{ 
-   \begin{tabular}{ccc}
-\toprule
- & {\textbf{Original}} &{\textbf{Inverted}}\\
-            {True world position} & {Estimated world position} &  {Estimated world position}  \\
-\midrule
-         (0.350, 0.000, 0.065)  & (0.349, -0.001, 0.105) & NOT DETECTED\\
-         (0.300, 0.100, 0.065)  &(0.305, 0.089, 0.116) & (0.297, 0.106, 0.040)\\
-         (0.300, -0.100, 0.065)  & (0.305, -0.089, 0.117)&NOT DETECTED\\
-         (0.400, 0.100, 0.065)  & (0.394, 0.089, 0.116)& (0.403, 0.106, 0.040)\\
-         (0.400, -0.100, 0.065) &(0.394, -0.089, 0.116) &NOT DETECTED\\
-\bottomrule
-    \end{tabular} }
-    \caption{True world position vs estimated world position for original and inverted images.}
-    \label{tab:vision}
-\end{table}
-These results indicate that the YOLOv8 model does a better job of detecting the original image than the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. This is an important consideration if our Grocery Robot were to actually be deployed.
-\subsection{Visualization of Object Detection Bounding Boxes}\label{sec:bounding_box_vis}
-\begin{figure}[H]
-    \centering
-
-    \caption*{Location 1: \textbf{(0.350, 0.000, 0.065)}}
-    \label{fig:comparison}
-
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test/pos01_x0.35_y0.00.png}
-    \hfill
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test_flip/flip_pos01_x0.35_y0.00.png}
-
-\end{figure}
-
-\begin{figure}[H]
-    \centering
-
-    \caption*{Location 2: \textbf{(0.300, 0.100, 0.065)}}
-    \label{fig:comparison}
-
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test/pos02_x0.30_y0.10.png}
-    \hfill
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test_flip/flip_pos02_x0.30_y0.10.png}
-
-\end{figure}
-\begin{figure}[H]
-    \centering
-    \caption*{Location 3: \textbf{(0.300, -0.100, 0.065)}}
-    \label{fig:comparison}
-
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test/pos03_x0.30_y-0.10.png}
-    \hfill
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test_flip/flip_pos03_x0.30_y-0.10.png}
-]
-\end{figure}
-\begin{figure}[H]
-    \centering
-
-    \caption*{Location 4: \textbf{(0.400, 0.100, 0.065)}}
-    \label{fig:comparison}
-
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test/pos04_x0.40_y0.10.png}
-    \hfill
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test_flip/flip_pos04_x0.40_y0.10.png}
-
-\end{figure}
-\begin{figure}[H]
-    \centering
-
-    \caption*{Location 5: \textbf{(0.400, -0.100, 0.065)}}
-    \label{fig:comparison}
-
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test/pos05_x0.40_y-0.10.png}
-    \hfill
-    \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test_flip/flip_pos05_x0.40_y-0.10.png}
-
-\end{figure}
 % for proposal
 %\section{Experiments and Evaluation}
 
@@ -242,15 +154,13 @@ These results indicate that the YOLOv8 model does a better job of detecting the 
 % for final report
 \section{Conclusion and Future Work}
 
-We were able to successfully simulate a robotic arm in gazebo, use YOLOv8 for object detection and recognition, and use MoveIt for motion planning to move the arm to the ball and adjust the gripper so it could be picked up. Our results demonstrate that YOLOv8 is an appropriate vision model for our task, as we were able to successfully locate the ball and compute its centroid. 
+A high level summary of what was accomplished, along with a discussion on limitations and avenues for future work (typically 2 to 3 paragraphs). 
 
-There are many avenues for future work. Due to time constraints, we were not able to complete the project we had initially planned. Our 
 
 %\section{Timeline and Individual Responsibilities}
 
 %State the timeline in terms of weeks and milestones you want to achieve. If working on a team, state what the individual responsibilities are at this point (i.e., who is going to do what, these may of course change over the course of the project). \cite{short2010no}.
 
 \bibliographystyle{plain}
-\newpage
 \bibliography{references}
 \end{document}
