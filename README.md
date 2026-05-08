@@ -1,46 +1,50 @@
 # GroceryRobot
 
-A simulated grocery-picking robot. A UR3e arm picks a red apple off a table and places it on a shelf, using MoveIt 2 for motion planning and YOLOv8 via an overhead camera for localization.
+This project explores the task of putting away groceries with a robotic arm, addressing the computer vision and motion planning components and their translation into a simulated environment. We then narrow our focus to the subtask of picking up objects, analyzing the effect of lighting on the YOLO detection algorithm and the effect of increasing movement tolerance on the success of the pickup task.
+
+This repository contains the code to run the robot simulation, along with supporting documents.
 
 ---
+
+# Running the code
+
+This project is intended to run on a Ubunto desktop running ROS 2 Kilted and Gazebo Ionic.
+
+We also recommend [installing UV](https://docs.astral.sh/uv/getting-started/installation/) to manage the Python environments.
 
 ## First-time setup
 
 ```bash
-bash setup.sh
+./setup.sh
 ```
 
 Run once on a new machine. Builds the ROS 2 workspace and installs Python dependencies.
+Gives warnings if something is not installed (such as the correct version of Gazebo)
 
 ---
 
 ## Launch scripts
 
-All scripts must be run from a **native terminal** (not the VS Code integrated terminal — Gazebo's GUI breaks there).
+All scripts must be run from a **native terminal** (not the VS Code integrated terminal).
 
-### `bash launch.sh` — Interactive launch
+### `./launch.sh` — Interactive launch
 
-The standard way to run the simulation. Prompts you to select which nodes to start and whether to rebuild the workspace, then opens a live dashboard. Nodes can be set to **auto** (start immediately) or **manual** (start from the dashboard on demand).
+The standard way to run the simulation. Prompts which ROS nodes to start and whether to rebuild the workspace (aka run setup.sh again), then opens a live dashboard.
 
-### `bash do_the_thing.sh` — Fully automated single run
+### `./full_single_run.sh` — Automated launch, no pick node
 
-Starts everything automatically in the right order — simulation, overhead camera localizer, MoveIt, and the pick node — then waits. No interaction required. Ctrl+C stops everything cleanly.
+Runs a full process of the robotic arm identifying and then picking up the apple automatically.
 
-### `bash full_single_run.sh` — Automated launch, no pick node
+### `./multi_run.sh` — 5-position automated test
 
-Same as `do_the_thing.sh` but stops before launching the pick node. Useful for watching the simulation manually or running the pick node yourself in a second terminal.
+Runs a full process of the robotic arm identifying and picking up the apple automatically. The Apple then spawns in five different locations and the arm picks it up. Results are logged to `multi_run_results.csv` for future analysis.
 
-### `bash multi_run.sh` — 5-position automated test
+### `./sweep_run.sh` — Tolerance parameter sweep
 
-Runs one full pick cycle at each of 5 preset apple positions in a single Gazebo session. Results are appended to `multi_run_results.csv`. Edit the knobs at the top of `multi_run.py` to change tolerances, velocity scaling, and other parameters.
+Runs `multi_run` under a large combination of different values of position and orientation tolerance. 
+Runs headless, without spawning the Gazebo UI for improved speed.
 
-### `bash sweep_run.sh` — Tolerance parameter sweep
-
-Sweeps all combinations of `POSITION_TOLERANCE × ORIENTATION_TOLERANCE` (8 × 8 = 64 combinations by default), 5 positions each, in a single Gazebo session. Results are appended to `multi_run_results.csv`. Edit the lists at the top of `sweep_run.py` before running.
-
-Set `FAST_MODE = True` in `sweep_run.py` for headless Gazebo (no GUI) — roughly 2× faster.
-
-### `bash teardown.sh` — Stop everything
+### `./teardown.sh` — Stop everything
 
 Kills all running simulation processes. Safe to run even if nothing is running.
 
@@ -49,3 +53,15 @@ Kills all running simulation processes. Safe to run even if nothing is running.
 ## Logs
 
 All node output is written to `logs/` with a timestamp in the filename.
+
+# Report
+
+The report can be read at [GroceryRobot.pdf](documents/latex/final_report/GroceryRobot.pdf)
+
+# Videos
+* Demo of the robot running `multi_run`: [Vimeo](https://vimeo.com/1190248547)
+* Presentation about our project: `TODO` 
+
+# AI Use
+
+See `AI_USE.md` for information on our use of AI for this project.
