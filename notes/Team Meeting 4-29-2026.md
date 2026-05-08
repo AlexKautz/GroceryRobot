@@ -38,4 +38,4 @@ Meeting next on Saturday, May 2 at 11 AM in the robotics lab
 Till then:
 	* Alex - busy with exam
 	* Pascel - Work on the report ([Overleaf](https://www.overleaf.com/project/69efb0f4a3da6a34ba808193))
-	* Keven - Look at the V0 next steps
+	* Kevin - Look at the V0 next steps

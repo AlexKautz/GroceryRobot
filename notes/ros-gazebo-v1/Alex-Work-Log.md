@@ -314,7 +314,7 @@ ros2 topic pub --once /joint_trajectory_controller/joint_trajectory trajectory_m
 ### Phase 5: Ready for April 15th Meeting
 
 - [x] Take a screenshot of the working arm in Gazebo to share with the team
-- [x] Note any compatibility issues encountered for Keven (ROS) and Pascale (CV) to be aware of
+- [x] Note any compatibility issues encountered for Kevin (ROS) and Pascale (CV) to be aware of
 - [x] Commit any working config files to `code/Gazebo/` in the shared repo
 
 # 🛠️ Work Notes — Camera and Shelf

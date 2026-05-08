@@ -26,7 +26,7 @@
 * We are each focusing on the following topics. However they clearly overlap, so it's always good to communicate and read other people's work!
 	* Alex
 		* Computer vision
-	* Keven
+	* Kevin
 		* Manipulation
 	* Pascale
 		* Planning
@@ -35,9 +35,9 @@
 	* We can each fill it out for our topic, and then meet to create the final document on Monday. See [[Team Meeting 3-23-2026]].
 ## Action Items
 - [ ] **Alex:** Fill out the [project proposal](https://www.overleaf.com/project/69bc515b46b38910ce249f37) on the topic of computer vision. 📅 2026-03-23
-- [ ] **Keven:** Fill out the [project proposal](https://www.overleaf.com/project/69bc515b46b38910ce249f37) on the topic of manipulation. 📅 2026-03-23
+- [ ] **Kevin:** Fill out the [project proposal](https://www.overleaf.com/project/69bc515b46b38910ce249f37) on the topic of manipulation. 📅 2026-03-23
 - [ ] **Pascale:** Fill out the [project proposal](https://www.overleaf.com/project/69bc515b46b38910ce249f37) on the topic of planning. 📅 2026-03-23
-- [ ] **Keven:** Create a README about how to get the GAZEBO set up. (No due date)
+- [ ] **Kevin:** Create a README about how to get the GAZEBO set up. (No due date)
 
 - [ ] **All:** Follow up meeting: [[Team Meeting 3-23-2026]] to create our final project proposal document 📅 2026-03-23 ⏰ 11:00 AM
 
@@ -45,7 +45,7 @@
 > *these are the raw notes I took during the meeting. They are a mess but I'll keep them just in case there's something we need I forgot to add to the summary.*
 > ## Members
 > - Alex
-> - Keven
+> - Kevin
 > - Pascale
 > ## Project Idea:
 > * Robot arm vs arm on a model platform
@@ -72,7 +72,7 @@
 > We reviewed the different topics we would focus on
 > * Alex
 > 	* Computer vision
-> * Keven
+> * Kevin
 > 	* Manipulation
 > * Pascale
 > 	* Planning
@@ -109,7 +109,7 @@
 > 	* Universal Robot Arm 3
 > 	* https://www.universal-robots.com/products/ur3e/
 > * We will use simulation. Use GAZEBO.
-> * **Keven will make a README setup**
+> * **Kevin will make a README setup**
 > 
 > ### Robot Planning
 > - Planning for arm movement
@@ -117,7 +117,7 @@
 > 
 > ### Topics
 > We will fill out the template with each of our topics.
-> Keven - manipulation
+> Kevin - manipulation
 > Alex - CV
 > Pascale - planning
 > 

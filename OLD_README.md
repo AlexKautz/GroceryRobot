@@ -113,7 +113,7 @@ GroceryRobot/
 | Person | Area |
 |--------|------|
 | Alex | Gazebo simulation |
-| Keven | ROS integration / manipulation |
+| Kevin | ROS integration / manipulation |
 | Pascale | CV / object detection |
 
 ---

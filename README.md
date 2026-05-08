@@ -60,8 +60,12 @@ The report can be read at [GroceryRobot.pdf](documents/latex/final_report/Grocer
 
 # Videos
 * Demo of the robot running `multi_run`: [Vimeo](https://vimeo.com/1190248547)
-* Presentation about our project: `TODO` 
+* Presentation about our project: [Vimeo](https://vimeo.com/1190332631)
 
 # AI Use
 
-See `AI_USE.md` for information on our use of AI for this project.
+As part of this project we collaborated with [Claude Code](https://claude.com/product/claude-code) and [ChatGPT](https://chatgpt.com/)
+
+The process of working with these models consisted of working together to design a detailed plan, and then step-by-step implementing it. An example planning document is [Alex-Work-Log.md](notes/ros-gazebo-v1/Alex-Work-Log.md), which covered some of the initial work to design the environment.
+
+We understood during this entire process that the use of AI is a balance. Our work is our own.
