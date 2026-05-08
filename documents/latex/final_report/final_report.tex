@@ -54,16 +54,16 @@ We hope this work can lead to real-world implementations of the grocery placing 
 
 % \textbf{We can expand upon it by rewriting our notes from each article we read.}
 
-Much research has been done in the field of home service robotics. For example, assisting the elderly with household tasks is a common application for robotics. In 1998, a team based out of Italy developed MOVAID. The MOVAID system consisted of a robotic arm attached to a driving base. MOVAID's goal was to assist in 3 main tasks: heating up food, cleaning the kitchen, and changing bed sheets. As part of that first task, the robot had to take food out of the refrigerator \cite{doi:10.3233/TAD-1999-10202}. 
+Much research has been done in the field of home service robotics. For example, assisting the elderly with household tasks is a common application for robotics. In 1998, a team based in Italy developed MOVAID. The MOVAID system consisted of a robotic arm attached to a driving base. MOVAID's goal was to assist in 3 main tasks: heating up food, cleaning the kitchen, and changing bed sheets. As part of that first task, the robot had to take food out of the refrigerator \cite{doi:10.3233/TAD-1999-10202}. 
 
 Researchers at the School of Artificial Intelligence, Jingchu University of Technology present a novel framework for an in-home service robot \cite{11179321}. They utilize ROS to develop high-precision robotic manipulators
-for enhanced grasping capabilities. They evaluate the success of their robot in a simulated home environment. In addition, the authors employ vision model YOLOV5 for object detection and recognition.
+for enhanced grasping capabilities. They evaluate the success of their robot in a simulated home environment. In addition, the authors employ vision model YOLOv5 for object detection and recognition.
 
 Similar to these works, we want to use a robotic arm to unpack and place groceries. We believe this task is important because it can help the elderly or disabled in the kitchen. We use a static robot arm rather than a moving base and focus on the task of putting away groceries. This task involves three key areas: object detection, trajectory planning, and stable placement.
 
-Object detection in a cluttered environment is an important problem. Researchers at Jaume I University in Castellon de la Plana, Spain studied object detection in a cluttered scene in order to help the BAXTER robot pick the correct object in a cluttered environment \cite{10.1145/3164541.3164628}. They employed deep learning methods to improve performance, and compare using RESNET, a semantic segmentation based method, to a localization method with YOLO for object detection. 
+Object detection in a cluttered environment is an important problem. Researchers at Jaume I University in Castellon de la Plana, Spain studied object detection in a cluttered scene in order to help the BAXTER robot pick the correct object in a cluttered environment \cite{10.1145/3164541.3164628}. They employed deep learning methods to improve performance, and compare using ResNet, a semantic segmentation based method, to a localization method with YOLO for object detection. 
 
-Trajectory planning is also relevant to our problem. Our robotic arm must navigate from the box of groceries to the appropriate storage container, without hitting any obstacles. Researchers in the Department of Mechatronics Engineering at the Isparta University of Applied Sciences in Isparta Turkey studied trajectory planning for a robotic arm with 6 degrees of freedom \cite{EKREM2023106099}. Their experiments focused on the Particle Swarm Optimization (PSO) algorithm, which is a population-based stochastic optimization method. This algorithm starts with a population of random solutions and searches for the optimal solution by updating generations. They proposed that the PSO algorithm optimizes trajectory planning of the 6-degree-of-freedom. 
+Trajectory planning is also relevant to our problem. Our robotic arm must navigate from the box of groceries to the appropriate storage container, without hitting any obstacles. Researchers in the Department of Mechatronics Engineering at the Isparta University of Applied Sciences in Isparta, Turkey studied trajectory planning for a robotic arm with 6 degrees of freedom \cite{EKREM2023106099}. Their experiments focused on the Particle Swarm Optimization (PSO) algorithm, which is a population-based stochastic optimization method. This algorithm starts with a population of random solutions and searches for the optimal solution by updating generations. They proposed that the PSO algorithm optimizes trajectory planning of the 6-degree-of-freedom arm. 
 
 It is also important that our robot is able to facilitate stable placement of each grocery item. As the storage containers accumulate objects, the robot must determine an appropriate location for the new grocery item. Haustein, Hang, Stork, and Kragic address the problem of placement planning by creating an algorithm that computes placements for objects based on three main principles: (1) suitable locations must be identified, (2) placements must be reachable, and (3) not all placements are equally desirable \cite{8967732}.
 
@@ -91,21 +91,21 @@ In addition, recent approaches explore unified learning frameworks that jointly 
 
 \subsubsection{Computer Vision}
 
-To detect, recognize, and locate our object we use a YOLO (You Only Look Once) model. YOLO is an object detection and segmentation model initially developed by Joseph Redmon, Santosh Divvala, Ross Girshick, and Ali Farhadi at the University of Washington in 2015 \cite{DBLP:journals/corr/RedmonDGF15}. Their model differs from prior object detection techniques because they frame  object detection as a regression problem. A single convolutional neural network simultaneously predicts bounding boxes and class probabilities. This allows for incredibly fast and generalizable object detection.
+To detect, recognize, and locate our object we use a YOLO (You Only Look Once) model. YOLO is an object detection and segmentation model initially developed by Joseph Redmon, Santosh Divvala, Ross Girshick, and Ali Farhadi at the University of Washington in 2015 \cite{DBLP:journals/corr/RedmonDGF15}. Their model differs from prior object detection techniques because they frame object detection as a regression problem. A single convolutional neural network simultaneously predicts bounding boxes and class probabilities. This allows for incredibly fast and generalizable object detection.
 
 
-In our project, we use the COCO-pretrained YOLOv8 model, released in 2023 by Ultralytics \cite{yolov8_ultralytics}. COCO is a large-scale annotated object detection and segmentation dataset. The classes in this dataset are diverse, containing categories such as cars, animals, or handbags. This dataset is appropriate for the scale of our problem, as it includes several grocery items as classes, specifically apple, orange, banana, carrot, and broccoli. In our scaled-down simulation we are using a red ball. The COCO dataset has a category called `sports ball'. Since we are using a single fixed item, COCO is an adequate dataset for model training.
+In our project, we use the COCO-pretrained YOLOv8 model, released in 2023 by Ultralytics \cite{yolov8_ultralytics}. COCO is a large-scale annotated object detection and segmentation dataset. The classes in this dataset are diverse, containing categories such as cars, animals, or handbags. This dataset is appropriate for the scale of our problem, as it includes several grocery items as classes, specifically apple, orange, banana, carrot, and broccoli. In our scaled-down simulation we are using a red ball. The COCO dataset has a category called `sports ball'. Since we are using a single fixed item, COCO is an adequate dataset for our object detection task.
 
 Our overhead camera uses YOLOv8 to detect the ball's bounding box. From there it computes and stores the centroid of the ball. We then compute the depth level based on the centroid coordinates. With these x,y,z values we transform the pixel location to the location in the simulation world. This information is published for use in the trajectory calculation.
 \subsubsection{Trajectory Motion Planning}
 
-The trajectory motion planning module connects the overhead camera perception output to the UR3e arm motion execution through MoveIt. After the camera perception node detects the target grocery object, it publishes the object's 3D position as a PointStamped message. The motion planning node subscribes to this coordinate and generates a pick-up sequence consisting of a pre-grasp pose, grasp pose, and lift pose. These poses were obtained by adding vertical offsets to the detected object position. Each target pose is converted into a MoveIt MoveGroup action goal with position and orientation constraints for the end-effector link. Then MoveIt plans and executes collision-aware trajectories for the UR3e manipulator to approach the object, reach the grasp pose, and lift the object after the gripper closes. 
+The trajectory motion planning module connects the overhead camera perception output to the UR3e arm motion execution through MoveIt. After the camera perception node detects the target grocery object, it publishes the object's 3D position as a PointStamped message. The motion planning node subscribes to this coordinate and generates a pickup sequence consisting of a pre-grasp pose, grasp pose, and lift pose. These poses were obtained by adding vertical offsets to the detected object position. Each target pose is converted into a MoveIt MoveGroup action goal with position and orientation constraints for the end-effector link. Then MoveIt plans and executes collision-aware trajectories for the UR3e manipulator to approach the object, reach the grasp pose, and lift the object after the gripper closes. 
 The gripper is controlled separately through joint trajectory commands, allowing the system to coordinate arm motion and grasp execution in a simple closed-loop pickup pipeline.
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.7\textwidth]{documents/latex/final_report/Pipeline_MoveIt_pickup_node.png}
-    \caption{Pipeline of the MoveIt object pickup Node}
+    \caption{Pipeline of the MoveIt object pickup node}
     \label{fig:MoveIt}
 \end{figure}
 
@@ -146,7 +146,7 @@ Conceptually, the robot is treated as separate from the environment so that it c
 
 \subsubsection{Robot Arm and Gripper}
 
-For this project, we selected the UR3e robotic arm from Universal Robots as the main manipulator in our simulated environment.The UR3e is a compact 6 DoF collaborative robot arm that is commonly used in industrial and research settings. Its collaborative design makes it suitable for applications involving human environments, which aligns with our goal of developing a household grocery assistance robot.
+For this project, we selected the UR3e robotic arm from Universal Robots as the main manipulator in our simulated environment. The UR3e is a compact 6-DoF collaborative robot arm that is commonly used in industrial and research settings. Its collaborative design makes it suitable for applications involving human environments, which aligns with our goal of developing a household grocery assistance robot.
 
 The UR3e was also chosen for its compatibility with our software stack. Since our project uses Gazebo, ROS 2 Kilted, and MoveIt, the existing Universal Robots ROS 2 packages were useful because they provide robot description files, driver support, and MoveIt configuration resources. This made it easier to spawn the UR3e in Gazebo and integrate it into our motion planning pipeline.
 
@@ -163,7 +163,7 @@ The ROS 2 nodes built for our project are:
     
     \item[\texttt{moveit\_pick\_from\_camera}] Subscribes to the apple position published by the overhead camera and builds a pick sequence including pre-grasp, grasp, and lift poses. It sends these pose goals to MoveIt through the action server and also publishes gripper commands during the grasping sequence. It is used during the tolerance experimentation.
     
-    \item[\texttt{test\_apple\_detection}] Tests the \texttt{overhead\_camera\_localizer} by moving the apple to 5 different locations in sequence. It then save an image of the apple with an annotated bounding box from YOLO. It is used during the object detection experiment.
+    \item[\texttt{test\_apple\_detection}] Tests the \texttt{overhead\_camera\_localizer} by moving the apple to 5 different locations in sequence. It then saves an image of the apple with an annotated bounding box from YOLO. It is used during the object detection experiment.
 
     \item[\texttt{joint\_control\_panel}] Runs a GUI App with sliders to directly change the position of the robotic arm. Used during initial development for debugging.
 
@@ -216,12 +216,12 @@ We expect that as both position tolerance and orientation tolerance increase, th
     \label{fig:graspgraph}
 \end{figure}
 
-Figure \ref{fig:graspgraph} clearly shows that expectation on the effect of increasing position tolerance was correct;  the number of successful pick up attempts drops continuously. We also know the randomness in the data, this is because a pick up attempt with a high tolerance can still get "Lucky" position itself correctly.
+Figure \ref{fig:graspgraph} clearly shows that our expectation on the effect of increasing position tolerance was correct; the number of successful pickup attempts drops continuously. We also see randomness in the data; this is because a pickup attempt with a high tolerance can still get "lucky" and position itself correctly.
 
 We do not see an effect of increasing the orientation tolerance. This may be due to the arm still being able to grasp the apple from different angles, or it could be simply that we need to explore a larger range of values for orientation tolerance. Future work could expand on this.
 
 \subsection{Object Detection Experiment Results}
-The results of our object detection experiment indicate that the YOLOv8 model does a better job of detecting the original image than the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final version of the experiment, we detect the ball using the original image with shadows below the ball.
+The results of our object detection experiment indicate that the YOLOv8 model does a better job of detecting the ball in the original image than in the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final version of the experiment, we detect the ball using the original image with shadows below the ball.
 \begin{table}[H]
         \centering
          \renewcommand{\arraystretch}{1.4}
@@ -280,7 +280,7 @@ The results of our object detection experiment indicate that the YOLOv8 model do
     \centering
 
     \caption*{Location 4: \textbf{(0.400, 0.100, 0.065)}}
-    \label{fig:compariso4n}
+    \label{fig:comparison4}
 
     \includegraphics[width=0.48\textwidth]{documents/latex/final_report/apple_detection_test/pos04_x0.40_y0.10.png}
     \hfill
@@ -306,7 +306,7 @@ The results of our object detection experiment indicate that the YOLOv8 model do
 % for final report
 \section{Conclusion and Future Work}
 
-We were able to successfully simulate a robotic arm in Gazebo and integrate YOLO and MoveIt for object detection an motion planning, respectively. Our results demonstrate that YOLOv8 pretrained on the COCO dataset is an appropriate vision model for our task, as we were able to successfully locate the ball and compute its centroid. In addition, we evaluated several conditions that affect the robot arm's performance. In our vision experiment, we tested how the location of shadows affects object detection performance. In addition, we measured the effect of the position and orientation tolerance on the robot arm's gripping abilities. These are all important factors we would need to consider if our Grocery Robot were to actually be deployed. At the end of our experiment, our robotic arm is able identify the location of the ball, plan a trajectory to the ball, and pick it up using the gripper.
+We were able to successfully simulate a robotic arm in Gazebo and integrate YOLO and MoveIt for object detection and motion planning, respectively. Our results demonstrate that YOLOv8 pretrained on the COCO dataset is an appropriate vision model for our task, as we were able to successfully locate the ball and compute its centroid. In addition, we evaluated several conditions that affect the robot arm's performance. In our vision experiment, we tested how the location of shadows affects object detection performance. In addition, we measured the effect of the position and orientation tolerance on the robot arm's gripping abilities. These are all important factors we would need to consider if our Grocery Robot were to actually be deployed. At the end of our experiment, our robotic arm is able to identify the location of the ball, plan a trajectory to the ball, and pick it up using the gripper.
 
 There are many avenues for future work. Our initial proposal was to program a robotic arm in simulation to help a person unpack their grocery delivery order. We wanted our robot to classify grocery items as frozen, refrigerated, or non-perishable, and then place them in corresponding locations in the fridge or shelf. The next step would be to add the motion planning to have our robotic arm place the ball in the correct location. Then, we would like to add additional simulated grocery objects, and see if the YOLO algorithm could successfully recognize different objects in a cluttered environment. Ultimately, we'd like to deploy our robot in the real world. This would involve transferring the simulated Grocery Robot to the real UR3e arm.  
 
