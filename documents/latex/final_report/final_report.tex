@@ -24,9 +24,14 @@
 \maketitle
 
 % for final report only
-%\begin{abstract}
+\begin{abstract}
 %A one paragraph high level description of the work. The abstract is typically the first thing someone would read from the paper before deciding whether to continue reading and hence, serves as an advertisement to the reader to read the whole paper. 
-%\end{abstract}
+
+This project explores the task of putting away groceries with a robotic arm, addressing the computer vision and motion planning components and their translation into a simulated environment. We then narrow our focus to the subtask of picking up objects, analyzing the effect of lighting on the YOLO detection algorithm and the effect of increasing movement tolerance on the success of the pickup task.
+
+We find that lower position tolerance significantly improves grasp success, while upward shadow placement noticeably changes YOLO's ability to detect objects consistently.
+
+\end{abstract}
 
 \section{Introduction}
 
@@ -38,9 +43,7 @@ This kind of assistance can be a powerful utility for elderly or disabled indivi
 
 For our project, we simulated a version of this arm using Gazebo in order to explore the problem space. We designed an environment analogous to a real kitchen, and laid out a design for the full system.
 
-We then focused on just the sub-problem of picking up objects, integrating computer vision techniques like YOLO, and trajectory planning tools like MoveIt.
-
-We analyzed the effect inverted images and shadows may have on the YOLO algorithm. We also measured the effect that lowering the position and orientation tolerance in trajectory planning has on the reliability of the picking up task.
+We then focused on just the sub-problem of picking up objects, integrating computer vision techniques like YOLO, and trajectory planning tools like MoveIt. We analyze the effect inverted images and shadows may have on the YOLO algorithm. We also measured the effect that lowering the position and orientation tolerance in trajectory planning has on the reliability of the picking up task.
 
 We hope this work can lead to real-world implementations of the grocery placing system, and broadly help with picking tasks for robotic arms.
 
@@ -94,7 +97,7 @@ In addition, recent approaches explore unified learning frameworks that jointly 
 To detect, recognize, and locate our object we use a YOLO (You Only Look Once) model. YOLO is an object detection and segmentation model initially developed by Joseph Redmon, Santosh Divvala, Ross Girshick, and Ali Farhadi at the University of Washington in 2015 \cite{DBLP:journals/corr/RedmonDGF15}. Their model differs from prior object detection techniques because they frame object detection as a regression problem. A single convolutional neural network simultaneously predicts bounding boxes and class probabilities. This allows for incredibly fast and generalizable object detection.
 
 
-In our project, we use the COCO-pretrained YOLOv8 model, released in 2023 by Ultralytics \cite{yolov8_ultralytics}. COCO is a large-scale annotated object detection and segmentation dataset. The classes in this dataset are diverse, containing categories such as cars, animals, or handbags. This dataset is appropriate for the scale of our problem, as it includes several grocery items as classes, specifically apple, orange, banana, carrot, and broccoli. In our scaled-down simulation we are using a red ball. The COCO dataset has a category called `sports ball'. Since we are using a single fixed item, COCO is an adequate dataset for our object detection task.
+In our project, we use the COCO-pretrained YOLOv8 model, released in 2023 by Ultralytics \cite{yolov8_ultralytics}. COCO is a large-scale annotated object detection and segmentation dataset. The classes in this dataset are diverse, containing categories such as cars, animals, or handbags. This dataset is appropriate for the scale of our problem, as it includes several grocery items as classes, specifically apple, orange, banana, carrot, and broccoli. In our scaled-down simulation we are using a red ball to represent an apple. The COCO dataset has a category called `sports ball'. Since we are using a single fixed item, COCO is an adequate dataset for our object detection task.
 
 Our overhead camera uses YOLOv8 to detect the ball's bounding box. From there it computes and stores the centroid of the ball. We then compute the depth level based on the centroid coordinates. With these x,y,z values we transform the pixel location to the location in the simulation world. This information is published for use in the trajectory calculation.
 \subsubsection{Trajectory Motion Planning}
@@ -193,7 +196,7 @@ We ran a large number of grasping attempts. For each attempt, we varied both the
     \caption{Sample of grasp trials showing ball position, tolerance parameters, and outcome.}
     \label{tab:sample_runs}
 \end{table}
-We covered 8 possible values each for position and orientation tolerance, along with 5 ball locations, totaling 320 grasp attempts. To collect this data efficiently, we used an automated script that ran Gazebo headless, re-spawning the ball and detecting whether the grasp succeeded.\footnote{A video of the robot running these trials can be found at https://vimeo.com/1190248547} 
+We covered 8 possible values (from 0.01 to 0.08) each for position and orientation tolerance, along with 5 ball locations, totaling 320 grasp attempts. To collect this data efficiently, we used an automated script that ran Gazebo headless, re-spawning the ball and detecting whether the grasp succeeded.\footnote{A video of the robot running these trials can be found at https://vimeo.com/1190248547} 
 
 \subsubsection{Object Detection Experiment}
 
@@ -218,10 +221,11 @@ We expect that as both position tolerance and orientation tolerance increase, th
 
 Figure \ref{fig:graspgraph} clearly shows that our expectation on the effect of increasing position tolerance was correct; the number of successful pickup attempts drops continuously. We also see randomness in the data; this is because a pickup attempt with a high tolerance can still get "lucky" and position itself correctly.
 
-We do not see an effect of increasing the orientation tolerance. This may be due to the arm still being able to grasp the apple from different angles, or it could be simply that we need to explore a larger range of values for orientation tolerance. Future work could expand on this.
+We do not see an effect of increasing the orientation tolerance within its range. This is most likely because the tested range was too narrow to observe an effect. Our range from 0.01 to 0.08 radians only covers around 4°. Future work should cover a larger range, of at least 30° (0.5 radians).
+
 
 \subsection{Object Detection Experiment Results}
-The results of our object detection experiment indicate that the YOLOv8 model does a better job of detecting the ball in the original image than in the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final version of the experiment, we detect the ball using the original image with shadows below the ball.
+The results of our object detection experiment indicate that the YOLOv8 model does a better job of detecting the ball in the original image than in the inverted one. The model successfully detects the ball in all 5 trials given the original image, but is only able to detect the ball 2 times in the inverted image. Since model performance is largely dependent on the data it was trained on, we suppose that images of balls in the COCO dataset may be positioned such that the shadow appears below the ball. This test indicates that light source will affect our ability to detect objects. For our final program, we detect the ball using the original image, where the shadows are below the ball.
 \begin{table}[H]
         \centering
          \renewcommand{\arraystretch}{1.4}
@@ -306,11 +310,11 @@ The results of our object detection experiment indicate that the YOLOv8 model do
 % for final report
 \section{Conclusion and Future Work}
 
-We were able to successfully simulate a robotic arm in Gazebo and integrate YOLO and MoveIt for object detection and motion planning, respectively. Our results demonstrate that YOLOv8 pretrained on the COCO dataset is an appropriate vision model for our task, as we were able to successfully locate the ball and compute its centroid. In addition, we evaluated several conditions that affect the robot arm's performance. In our vision experiment, we tested how the location of shadows affects object detection performance. In addition, we measured the effect of the position and orientation tolerance on the robot arm's gripping abilities. These are all important factors we would need to consider if our Grocery Robot were to actually be deployed. At the end of our experiment, our robotic arm is able to identify the location of the ball, plan a trajectory to the ball, and pick it up using the gripper.
+We were able to successfully simulate a robotic arm in Gazebo and integrate YOLO and MoveIt for object detection and motion planning, respectively. Our results demonstrate that YOLOv8 pretrained on the COCO dataset is an appropriate vision model for our task, as we were able to successfully locate the ball and compute its centroid. In addition, we evaluated several conditions that affect the robot arm's performance. In our vision experiment, we tested how the location of shadows affects object detection performance. In our tolerance experiment, we measured the effect of the position and orientation tolerance on the robot arm's gripping abilities. These are all important factors we would need to consider if our Grocery Robot were to actually be deployed. Our final program for the robotic arm is able to identify the location of the ball, plan a trajectory to the ball, and pick it up using the gripper. This is an important stepping stone to building a successful grocery placement robot system.
 
-There are many avenues for future work. Our initial proposal was to program a robotic arm in simulation to help a person unpack their grocery delivery order. We wanted our robot to classify grocery items as frozen, refrigerated, or non-perishable, and then place them in corresponding locations in the fridge or shelf. The next step would be to add the motion planning to have our robotic arm place the ball in the correct location. Then, we would like to add additional simulated grocery objects, and see if the YOLO algorithm could successfully recognize different objects in a cluttered environment. Ultimately, we'd like to deploy our robot in the real world. This would involve transferring the simulated Grocery Robot to the real UR3e arm.  
+There are many avenues for future work. Our initial proposal was to program a robotic arm in simulation to help a person unpack their grocery delivery order. We wanted our robot to classify grocery items as frozen, refrigerated, or non-perishable, and then place them in corresponding locations in the fridge or shelf. The next step would be to add motion planning to have our robotic arm place the ball in the correct location. Then, we would like to add additional simulated grocery objects, and see if the YOLO algorithm could successfully recognize different objects in a cluttered environment. Ultimately, we would like to deploy our robot in the real world. This would involve transferring the simulated Grocery Robot to the real UR3e arm.  
 
-Another interesting future work question would be to evaluate what position tolerance is necessary to complete the task successfully. Our results show that lower tolerance has higher success rates. Since lower tolerance is more computationally expensive, however, we would like to find the highest possible position tolerance where the task can be completed. 
+Another interesting future work question would be to evaluate the position tolerance necessary to complete the task successfully. Our results show that lower tolerance has higher success rates.  However since lower tolerance is more computationally expensive, we would like to find the highest possible position tolerance where the task can be completed. 
 
 %\section{Timeline and Individual Responsibilities}
 
