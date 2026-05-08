@@ -4,7 +4,7 @@
 	- We will add our code to this repository in folders (like `code/ROS/`, `code/Gazebo/`, `code/CV_Explore/`).
 	- We have new areas of focus:
 		- Pascale - CV, object detection, object localization
-		- Keven - ROS
+		- Kevin - ROS
 		- Alex - Gazebo simulation
 - ROS and Gazebo versions
 	- ROS and Gazebo have specific version compatibility.

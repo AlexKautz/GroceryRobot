@@ -1,131 +1,71 @@
 # GroceryRobot
 
-A simulated grocery-picking robot built on **ROS 2 Kilted** and **Gazebo Ionic**.
-A UR3e arm picks an item off a table and places it onto a shelf, fully autonomously.
+This project explores the task of putting away groceries with a robotic arm, addressing the computer vision and motion planning components and their translation into a simulated environment. We then narrow our focus to the subtask of picking up objects, analyzing the effect of lighting on the YOLO detection algorithm and the effect of increasing movement tolerance on the success of the pickup task.
+
+This repository contains the code to run the robot simulation, along with supporting documents.
 
 ---
 
-## Quick Start
+# Running the code
 
-> Run in a **native terminal** — Gazebo's GUI has a known error in the VS Code integrated terminal.
+This project is intended to run on a Ubunto desktop running ROS 2 Kilted and Gazebo Ionic.
 
-**First time on a new machine:**
+We also recommend [installing UV](https://docs.astral.sh/uv/getting-started/installation/) to manage the Python environments.
+
+## First-time setup
+
 ```bash
-source /opt/ros/kilted/setup.bash
-bash setup.sh
+./setup.sh
 ```
 
-**Every time after that:**
-```bash
-bash launch.sh
-```
-
-`launch.sh` tears down any running simulation, optionally rebuilds the workspace, then opens an interactive launch manager where you can select which nodes to start. Nodes can be set to **auto** (start immediately) or **manual** (start from the dashboard when ready). Your selections are remembered for next time.
-
-Click **Play** in Gazebo after it opens. The arm will move to its home pose facing the table.
-
-**To stop everything:**
-```bash
-bash teardown.sh
-```
-
-**For full setup, see [[Setup and Info]]**
+Run once on a new machine. Builds the ROS 2 workspace and installs Python dependencies.
+Gives warnings if something is not installed (such as the correct version of Gazebo)
 
 ---
 
-## Automated tolerance sweep (overnight)
+## Launch scripts
 
-`sweep_run.sh` runs all 25 combinations of `POSITION_TOLERANCE × ORIENTATION_TOLERANCE` automatically in a single Gazebo session — 5 ball positions each, 125 pick cycles total. Results are appended to `multi_run_results.csv`.
+All scripts must be run from a **native terminal** (not the VS Code integrated terminal).
 
-```bash
-bash sweep_run.sh
-```
+### `./launch.sh` — Interactive launch
 
-Edit the knobs at the top of `sweep_run.py` before running:
+The standard way to run the simulation. Prompts which ROS nodes to start and whether to rebuild the workspace (aka run setup.sh again), then opens a live dashboard.
 
-| Variable | What it controls |
-|---|---|
-| `POSITION_TOLERANCES` | List of MoveIt position tolerances to test (metres) |
-| `ORIENTATION_TOLERANCES` | List of MoveIt orientation tolerances to test (radians) |
-| `FAST_MODE` | `True` = headless Gazebo (no window) + shorter settle times — roughly 2× faster |
+### `./full_single_run.sh` — Automated launch, no pick node
 
-**Keep the computer awake on Ubuntu**
+Runs a full process of the robotic arm identifying and then picking up the apple automatically.
 
-Wrap the command with `gnome-session-inhibit` so suspend is blocked for exactly as long as the sweep runs, then automatically re-enabled when it finishes:
+### `./multi_run.sh` — 5-position automated test
 
-```bash
-gnome-session-inhibit --inhibit suspend:idle --reason "overnight sweep" bash sweep_run.sh
-```
+Runs a full process of the robotic arm identifying and picking up the apple automatically. The Apple then spawns in five different locations and the arm picks it up. Results are logged to `multi_run_results.csv` for future analysis.
 
-Alternatively, disable suspend manually before you start and re-enable it after:
+### `./sweep_run.sh` — Tolerance parameter sweep
 
-```bash
-# Before — disable automatic suspend and screen blank
-gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'nothing'
-gsettings set org.gnome.desktop.session idle-delay 0
+Runs `multi_run` under a large combination of different values of position and orientation tolerance. 
+Runs headless, without spawning the Gazebo UI for improved speed.
 
-bash sweep_run.sh
+### `./teardown.sh` — Stop everything
 
-# After — restore defaults
-gsettings reset org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type
-gsettings reset org.gnome.desktop.session idle-delay
-```
-
-> Make sure the machine is plugged in. Ubuntu's suspend settings are separate for battery vs. AC power — the commands above only affect AC.
+Kills all running simulation processes. Safe to run even if nothing is running.
 
 ---
 
-## What the simulation does
+## Logs
 
-1. A UR3e arm spawns in a world containing a table, a red apple, and a shelf
-2. Arm cameras (wrist-mounted + overhead) stream RGB and depth images into ROS 2
-3. On launch, the arm moves to a home pose facing the table
-4. Running `pick_and_place` sequences the arm through a full pick-and-place:
-   opens the gripper → approaches the apple → grasps it → lifts → rotates to the shelf → places → returns home
+All node output is written to `logs/` with a timestamp in the filename.
 
----
+# Report
 
-## Repository layout
+The report can be read at [GroceryRobot.pdf](documents/latex/final_report/GroceryRobot.pdf)
 
-```
-GroceryRobot/
-├── launch.sh                       # Entry point — run this to start everything
-├── launch.py                       # Interactive node manager (called by launch.sh)
-├── setup.sh                        # First-time setup on a new machine
-├── teardown.sh                     # Stop all running simulation processes
-├── code/
-│   └── ros-gazebo-v1/
-│       └── ros2_ws/src/
-│           └── ur3e_gazebo/        # Our ROS 2 package (all custom code lives here)
-├── notes/
-│   └── ros-gazebo-v1/
-│       ├── Setup and Info.md       # Full setup guide and key-files reference
-│       ├── Gripper Testing Guide.md
-│       └── Pick and Place Tuning Guide.md
-└── documents/                      # Formal write-ups (LaTeX + PDFs)
-```
+# Videos
+* Demo of the robot running `multi_run`: [Vimeo](https://vimeo.com/1190248547)
+* Presentation about our project: [Vimeo](https://vimeo.com/1190332631)
 
----
+# AI Use
 
-## Team
-*Note: These roles are just general categories. Everybody works on everything.*
+As part of this project we collaborated with [Claude Code](https://claude.com/product/claude-code) and [ChatGPT](https://chatgpt.com/)
 
-| Person | Area |
-|--------|------|
-| Alex | Gazebo simulation |
-| Keven | ROS integration / manipulation |
-| Pascale | CV / object detection |
+The process of working with these models consisted of working together to design a detailed plan, and then step-by-step implementing it. An example planning document is [Alex-Work-Log.md](notes/ros-gazebo-v1/Alex-Work-Log.md), which covered some of the initial work to design the environment.
 
----
-
-## Contributing
-
-1. Create a branch at https://github.com/AlexKautz/GroceryRobot/branches
-2. Make changes and commit
-3. Open a pull request at https://github.com/AlexKautz/GroceryRobot/pulls
-4. Squash merge when approved
-
-Notes are stored as Markdown. [Obsidian](https://obsidian.md/) works well — open the repo root folder to get started.
-
-## Overleaf
-The equivalent Overleaf project can be found at https://www.overleaf.com/project/69efb0f4a3da6a34ba808193.
+We understood during this entire process that the use of AI is a balance. Our work is our own.
